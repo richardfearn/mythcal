@@ -1,0 +1,49 @@
+mythcal
+Copyright 2009 Richard Fearn
+
+Introduction
+============
+
+mythcal is a simple script that synchronizes your MythTV recording schedule to
+a Google calendar.
+
+Leaving my MythTV server on 24/7 wastes electricity, but I don't want to forget
+to turn it on to record programmes. I wrote this to make it easy to keep track
+of upcoming recordings.
+
+Getting started
+===============
+
+1. Create a calendar in Google Calendar that will hold your MythTV programmes.
+   DO NOT USE YOUR MAIN GOOGLE CALENDAR! YOU MUST CREATE A NEW CALENDAR!
+   mythcal synchronises your programmes by deleting everything from the
+   calendar, then adding an event for each programme.
+
+2. Copy the template configuration file, mythcal.conf.template, to
+   mythcal.conf, and add the missing settings. The sections are:
+
+    * [database] - details about your MythTV database. You will find the right
+      settings in /etc/mythtv/mysql.txt.
+
+    * [google] - your Google username and password.
+
+    * [calendar] - details about your Google Calendar. "name" means the
+      name of the calendar. To find the "id", go into Google Calendar Settings,
+      open the "Calendars" tab, click the calendar you want to use, and look
+      in the "Calendar Address" section. The Calendar ID should be displayed:
+      it will look something like "abc123def@group.calendar.google.com". Please
+      remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
+      be deleted!
+
+3. Run mythcal manually with the "--dry-run" or "-d" option. This will tell you
+   what's going to be changed in your Google Calendar. Hopefully it won't tell
+   you that your important appointments are going to be deleted, because you'll
+   be using a *separate* calendar for mythcal!
+
+4. If everything looks good, set up a cron job which will execute mythcal as
+   often as you like. The command being run should look something like this:
+
+     cd /path/to/mythcal/directory && ./mythcal
+
+Richard Fearn
+richardfearn@gmail.com
