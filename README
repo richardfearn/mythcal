@@ -35,7 +35,7 @@ Getting started
       remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
       be deleted!
 
-3. Run mythcal manually with the "--dry-run" or "-d" option. This will tell you
+3. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
    what's going to be changed in your Google Calendar. Hopefully it won't tell
    you that your important appointments are going to be deleted, because you'll
    be using a *separate* calendar for mythcal!
