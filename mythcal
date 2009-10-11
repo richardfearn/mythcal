@@ -1,17 +1,10 @@
 #! /usr/bin/python -W ignore
 
-CALENDAR_EMAIL = ""
-CALENDAR_PASSWORD = ""
-CALENDAR_NAME = "MythTV"
-CALENDAR_ID = ""
-
-DATABASE_HOST = "localhost"
-DATABASE_NAME = "mythconverg"
-DATABASE_USERNAME = "mythtv"
-DATABASE_PASSWORD = ""
-
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
+
+import ConfigParser
+from optparse import Values
 
 import MySQLdb
 from datetime import datetime
@@ -24,6 +17,26 @@ import gdata.calendar.service
 import atom
 import time
 
+config = ConfigParser.RawConfigParser()
+config.read("mythcal.conf")
+
+settings = Values({
+        "database": Values({
+                "host": config.get("database", "host"),
+                "name": config.get("database", "name"),
+                "user": config.get("database", "user"),
+                "password": config.get("database", "password")
+        }),
+        "google": Values({
+                "username": config.get("google", "username"),
+                "password": config.get("google", "password")
+        }),
+        "calendar": Values({
+                "name": config.get("calendar", "name"),
+                "id": config.get("calendar", "id")
+        })
+})
+
 # see http://www.mythtv.org/wiki/Record_table
 def load_recordings_from_database(db):
     """Loads recordings from the MythTV database."""
@@ -33,7 +46,7 @@ def load_recordings_from_database(db):
     return [{"title": r[4], "channel": r[1], "start": datetime.utcfromtimestamp(r[2]), "end": datetime.utcfromtimestamp(r[3]), "description": r[5]} for r in result]
 
 # Load recordings from MythTV database
-db = MySQLdb.connect(host=DATABASE_HOST, db=DATABASE_NAME, user=DATABASE_USERNAME, passwd=DATABASE_PASSWORD)
+db = MySQLdb.connect(host=settings.database.host, db=settings.database.name, user=settings.database.user, passwd=settings.database.password)
 recordings = load_recordings_from_database(db)
 current_time = datetime.utcnow()
 past_recs = [r for r in recordings if r["end"] < current_time]
@@ -54,15 +67,15 @@ if recordings != last_recordings:
 
     # get calendar service and log in
     calendar_service = gdata.calendar.service.CalendarService()
-    calendar_service.email = CALENDAR_EMAIL
-    calendar_service.password = CALENDAR_PASSWORD
+    calendar_service.email = settings.google.username
+    calendar_service.password = settings.google.password
     calendar_service.source = "mythcal"
     calendar_service.ProgrammaticLogin()
 
     # get MythTV calendar
     calendars_feed = calendar_service.GetOwnCalendarsFeed()
-    cal = (c for c in calendars_feed.entry if c.title.text == CALENDAR_NAME).next()
-    batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % CALENDAR_ID
+    cal = (c for c in calendars_feed.entry if c.title.text == settings.calendar.name).next()
+    batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % settings.calendar.id
 
     # batch request
     request_feed = gdata.calendar.CalendarEventFeed()

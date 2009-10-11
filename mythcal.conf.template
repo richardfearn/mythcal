@@ -1,0 +1,13 @@
+[database]
+host = localhost
+name = mythconverg
+user = mythtv
+password = 
+
+[google]
+username = 
+password = 
+
+[calendar]
+name = 
+id = 
