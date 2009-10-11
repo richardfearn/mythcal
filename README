@@ -19,7 +19,11 @@ Getting started
    mythcal synchronises your programmes by deleting everything from the
    calendar, then adding an event for each programme.
 
-2. Copy the template configuration file, mythcal.conf.template, to
+2. Create a new directory somewhere on your MythTV server and copy the script
+   (mythcal) and the template configuration file (mythcal.conf.template) into
+   the directory.
+
+3. Copy the template configuration file, mythcal.conf.template, to
    mythcal.conf, and add the missing settings. The sections are:
 
     * [database] - details about your MythTV database. You will find the right
@@ -35,12 +39,12 @@ Getting started
       remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
       be deleted!
 
-3. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
+4. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
    what's going to be changed in your Google Calendar. Hopefully it won't tell
    you that your important appointments are going to be deleted, because you'll
    be using a *separate* calendar for mythcal!
 
-4. If everything looks good, set up a cron job which will execute mythcal as
+5. If everything looks good, set up a cron job which will execute mythcal as
    often as you like. The command being run should look something like this:
 
      cd /path/to/mythcal/directory && ./mythcal
