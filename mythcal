@@ -1,5 +1,8 @@
 #! /usr/bin/python -W ignore
 
+CONFIG_FILE = "mythcal.conf"
+CACHE_FILE = "mythcal.cache"
+
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
 
@@ -18,7 +21,7 @@ import atom
 import time
 
 config = ConfigParser.RawConfigParser()
-config.read("mythcal.conf")
+config.read(CONFIG_FILE)
 
 settings = Values({
         "database": Values({
@@ -55,10 +58,9 @@ future_recs = [r for r in recordings if current_time < r["start"]]
 recordings = {"past": past_recs, "current": current_recs, "future": future_recs}
 
 # load recording list from last time
-last_recordings_file = "last_recordings"
 last_recordings = None
-if os.path.exists(last_recordings_file):
-    f = open(last_recordings_file, "r")
+if os.path.exists(CACHE_FILE):
+    f = open(CACHE_FILE, "r")
     last_recordings = pickle.load(f)
     f.close()
 
@@ -123,6 +125,6 @@ if recordings != last_recordings:
     #     print "%s; status %s; reason %s" % (entry.batch_id.text, entry.batch_status.code, entry.batch_status.reason)
 
     # update last recording list
-    f = open(last_recordings_file, "w")
+    f = open(CACHE_FILE, "w")
     pickle.dump(recordings, f)
     f.close()
