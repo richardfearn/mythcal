@@ -1,8 +1,5 @@
-[database]
-host = localhost
-name = mythconverg
-user = mythtv
-password = 
+[mythtv]
+timezone = 
 
 [google]
 username = 

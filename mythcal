@@ -29,9 +29,10 @@ import MySQLdb
 from datetime import datetime
 import pickle
 import os
-import smtplib
-from email.mime.text import MIMEText
+import sys
 
+from MythTV import MythTV
+import pytz
 import gdata.calendar.service
 import atom
 import time
@@ -40,11 +41,8 @@ config = ConfigParser.RawConfigParser()
 config.read(CONFIG_FILE)
 
 settings = Values({
-        "database": Values({
-                "host": config.get("database", "host"),
-                "name": config.get("database", "name"),
-                "user": config.get("database", "user"),
-                "password": config.get("database", "password")
+        "mythtv": Values({
+                "timezone": config.get("mythtv", "timezone")
         }),
         "google": Values({
                 "username": config.get("google", "username"),
@@ -60,22 +58,52 @@ parser = OptionParser()
 parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes")
 (options, args) = parser.parse_args()
 
-# see http://www.mythtv.org/wiki/Record_table
-def load_recordings_from_database(db):
-    """Loads recordings from the MythTV database."""
-    cursor = db.cursor()
-    cursor.execute("SELECT type, station, UNIX_TIMESTAMP(ADDTIME(startdate, starttime)), UNIX_TIMESTAMP(ADDTIME(enddate, endtime)), title, description FROM record ORDER BY startdate, starttime")
-    result = cursor.fetchall()
-    return [{"title": r[4], "channel": r[1], "start": datetime.utcfromtimestamp(r[2]), "end": datetime.utcfromtimestamp(r[3]), "description": r[5]} for r in result]
+# get pytz timezone object for local time zone
+if settings.mythtv.timezone not in pytz.all_timezones:
+    print >>sys.stderr, "mythcal: timezone name '%s' is not recognised" % settings.mythtv.timezone
+    sys.exit(1)
+time_zone = pytz.timezone(settings.mythtv.timezone)
 
-# Load recordings from MythTV database
-db = MySQLdb.connect(host=settings.database.host, db=settings.database.name, user=settings.database.user, passwd=settings.database.password)
-recordings = load_recordings_from_database(db)
-current_time = datetime.utcnow()
-past_recs = [r for r in recordings if r["end"] < current_time]
-current_recs = [r for r in recordings if r["start"] <= current_time and current_time < r["end"]]
-future_recs = [r for r in recordings if current_time < r["start"]]
-recordings = {"past": past_recs, "current": current_recs, "future": future_recs}
+def naive_local_time_to_naive_utc_time(naive_local_time):
+    """Convert naive local time to naive UTC time"""
+    aware_local_time = time_zone.localize(naive_local_time)
+    aware_utc_time = aware_local_time.astimezone(pytz.utc)
+    naive_utc_time = aware_utc_time.replace(tzinfo=None)
+    return naive_utc_time
+
+def convert_program(prog):
+    """Converts a MythTV Program object to a dictionary"""
+    return {
+        "title": prog.title,
+        "channel": prog.channame,
+        "start": naive_local_time_to_naive_utc_time(prog.starttime),
+        "end": naive_local_time_to_naive_utc_time(prog.endtime),
+        "description": prog.description
+    }
+
+def sort_programs_by_start(p1, p2):
+    return cmp(p1["start"], p2["start"])
+
+def get_recordings_from_backend():
+    """Gets current and upcoming recordings from MythTV"""
+
+    mythtv = MythTV()
+
+    upcoming = mythtv.getUpcomingRecordings()
+    upcoming = map(convert_program, upcoming)
+    upcoming.sort(sort_programs_by_start)
+
+    current = []
+    for recorder in mythtv.getRecorderList():
+        if mythtv.isRecording(recorder):
+            current.append(mythtv.getCurrentRecording(recorder))
+    current = map(convert_program, current)
+    current.sort(sort_programs_by_start)
+
+    return {"current": current, "future": upcoming}
+
+# get recordings from MythTV backend
+recordings = get_recordings_from_backend()
 
 # load recording list from last time
 last_recordings = None

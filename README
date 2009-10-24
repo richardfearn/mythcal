@@ -23,11 +23,14 @@ Getting started
    (mythcal) and the template configuration file (mythcal.conf.template) into
    the directory.
 
-3. Copy the template configuration file, mythcal.conf.template, to
+3. Install the pytv package for your distribution ("python-tz" for Debian and
+   Ubuntu; "pytz" for Fedora).
+
+4. Copy the template configuration file, mythcal.conf.template, to
    mythcal.conf, and add the missing settings. The sections are:
 
-    * [database] - details about your MythTV database. You will find the right
-      settings in /etc/mythtv/mysql.txt.
+    * [mythtv] - details about your MythTV server. "timezone" should be a
+      zoneinfo time zone name such as "Europe/London".
 
     * [google] - your Google username and password.
 
@@ -39,15 +42,21 @@ Getting started
       remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
       be deleted!
 
-4. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
+5. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
    what's going to be changed in your Google Calendar. Hopefully it won't tell
    you that your important appointments are going to be deleted, because you'll
    be using a *separate* calendar for mythcal!
 
-5. If everything looks good, set up a cron job which will execute mythcal as
+6. If everything looks good, set up a cron job which will execute mythcal as
    often as you like. The command being run should look something like this:
 
      cd /path/to/mythcal/directory && ./mythcal
+
+Acknowledgements
+================
+
+Thanks to Michael T. Dean and Raymond Wagner for pointing me in the direction
+of the MythTV Python bindings.
 
 Richard Fearn
 richardfearn@gmail.com
