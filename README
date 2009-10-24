@@ -23,7 +23,7 @@ Getting started
    (mythcal) and the template configuration file (mythcal.conf.template) into
    the directory.
 
-3. Install the pytv package for your distribution ("python-tz" for Debian and
+3. Install the pytz package for your distribution ("python-tz" for Debian and
    Ubuntu; "pytz" for Fedora).
 
 4. Copy the template configuration file, mythcal.conf.template, to
