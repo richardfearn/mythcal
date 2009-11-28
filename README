@@ -34,7 +34,8 @@ Getting started
    mythcal.conf, and add the missing settings. The sections are:
 
     * [mythtv] - details about your MythTV server. "timezone" should be a
-      zoneinfo time zone name such as "Europe/London".
+      zoneinfo time zone name such as "Europe/London". To find an appropriate
+      time zone name, use the supplied 'timezones' script (see below).
 
     * [google] - your Google username and password.
 
@@ -55,6 +56,17 @@ Getting started
    often as you like. The command being run should look something like this:
 
      cd /path/to/mythcal/directory && ./mythcal
+
+Finding an appropriate time zone name
+=====================================
+
+The 'timezones' script can be used to find an appropriate time zone name.
+Running it with no parameters lists all time zone names. If a parameter is
+given, the script does a case-insensitive search for time zones containing
+that text. For example:
+
+    $ ./timezones york
+    America/New_York
 
 Acknowledgements
 ================
