@@ -45,7 +45,8 @@ Getting started
       in the "Calendar Address" section. The Calendar ID should be displayed:
       it will look something like "abc123def@group.calendar.google.com". Please
       remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
-      be deleted!
+      be deleted! "max_batch_size" is the maximum number of events that will be
+      combined into a single batch request when adding events. 25 should be OK.
 
 5. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
    what's going to be changed in your Google Calendar. Hopefully it won't tell

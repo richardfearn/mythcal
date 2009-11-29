@@ -8,3 +8,4 @@ password =
 [calendar]
 name = 
 id = 
+max_batch_size = 25

@@ -49,7 +49,8 @@ settings = Values({
         }),
         "calendar": Values({
                 "name": config.get("calendar", "name"),
-                "id": config.get("calendar", "id")
+                "id": config.get("calendar", "id"),
+                "max_batch_size" : int(config.get("calendar", "max_batch_size"))
         })
 })
 
@@ -159,9 +160,6 @@ if recordings != last_recordings:
 
     delete_existing_events()
 
-    # batch request
-    request_feed = gdata.calendar.CalendarEventFeed()
-
     def create_event(title, start, end, content=None):
         event = gdata.calendar.CalendarEventEntry()
         event.title = atom.Title(text=title)
@@ -182,9 +180,11 @@ if recordings != last_recordings:
         return create_event(title=event_title, start=event_start, end=event_end, content=content)
 
     if options.dry_run:
-        print "adding new entries..."
+        print "Adding new entries..."
 
     # add an event for current/future recordings
+    if not options.dry_run:
+        request_feed = gdata.calendar.CalendarEventFeed()
     for prog in recordings["current"] + recordings["future"]:
         if options.dry_run:
             print "    adding \"%s\"" % prog["title"]
@@ -192,6 +192,9 @@ if recordings != last_recordings:
             event = create_programme_event(prog["title"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
             event.batch_id = gdata.BatchId(text="insert-request")
             request_feed.AddInsert(entry=event)
+            if len(request_feed.entry) == settings.calendar.max_batch_size:
+                submit_batch_request(request_feed, batch_url)
+                request_feed = gdata.calendar.CalendarEventFeed()
 
     # add 'last updated' event
     last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
@@ -201,18 +204,18 @@ if recordings != last_recordings:
         event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60))
         event.batch_id = gdata.BatchId(text="insert-request")
         request_feed.AddInsert(entry=event)
-
-    # submit batch request
-    if not options.dry_run:
         submit_batch_request(request_feed, batch_url)
+
+    if options.dry_run:
+        print "New entries added."
 
     # update last recording list
     if options.dry_run:
-        print "updating cache..."
+        print "Updating cache..."
     else:
         f = open(CACHE_FILE, "w")
         pickle.dump(recordings, f)
         f.close()
 
     if options.dry_run:
-        print "done."
+        print "Done."
