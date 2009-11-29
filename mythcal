@@ -111,6 +111,37 @@ if os.path.exists(CACHE_FILE):
     last_recordings = pickle.load(f)
     f.close()
 
+def submit_batch_request(request, url):
+    response_feed = calendar_service.ExecuteBatch(request, url)
+    # for entry in response_feed.entry:
+    #     print "%s; status %s; reason %s" % (entry.batch_id.text, entry.batch_status.code, entry.batch_status.reason)
+
+def delete_existing_events():
+    """Deletes all events from the calendar"""
+
+    if options.dry_run:
+        print "Deleting existing entries..."
+    event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
+    while event_feed and len(event_feed.entry):
+        if not options.dry_run:
+            batch_request = gdata.calendar.CalendarEventFeed()
+        for event in event_feed.entry:
+            if options.dry_run:
+                print "    deleting \"%s\"" % event.title.text
+            else:
+                event.batch_id = gdata.BatchId(text="delete-request")
+                batch_request.AddDelete(entry=event)
+        if options.dry_run:
+            if event_feed.GetNextLink():
+                event_feed = calendar_service.GetCalendarEventFeed(event_feed.GetNextLink().href)
+            else:
+                event_feed = None
+        else:
+            submit_batch_request(batch_request, batch_url)
+            event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
+    if options.dry_run:
+        print "Existing entries deleted."
+
 # update calendar, and output new recording list, if different
 if recordings != last_recordings:
 
@@ -126,20 +157,10 @@ if recordings != last_recordings:
     cal = (c for c in calendars_feed.entry if c.title.text == settings.calendar.name).next()
     batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % settings.calendar.id
 
+    delete_existing_events()
+
     # batch request
     request_feed = gdata.calendar.CalendarEventFeed()
-
-    if options.dry_run:
-        print "deleting existing entries..."
-
-    # add a delete entry for all events in the calendar
-    event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
-    for event in event_feed.entry:
-        if options.dry_run:
-            print "    deleting \"%s\"" % event.title.text
-        else:
-            event.batch_id = gdata.BatchId(text="delete-request")
-            request_feed.AddDelete(entry=event)
 
     def create_event(title, start, end, content=None):
         event = gdata.calendar.CalendarEventEntry()
@@ -183,9 +204,7 @@ if recordings != last_recordings:
 
     # submit batch request
     if not options.dry_run:
-        response_feed = calendar_service.ExecuteBatch(request_feed, batch_url)
-        # for entry in response_feed.entry:
-        #     print "%s; status %s; reason %s" % (entry.batch_id.text, entry.batch_status.code, entry.batch_status.reason)
+        submit_batch_request(request_feed, batch_url)
 
     # update last recording list
     if options.dry_run:
