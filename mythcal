@@ -96,8 +96,10 @@ def get_recordings_from_backend():
 
     current = []
     for recorder in mythtv.getRecorderList():
-        if mythtv.isRecording(recorder):
-            current.append(mythtv.getCurrentRecording(recorder))
+        # str(...) required due to MythTV issue #7648
+        # see http://svn.mythtv.org/trac/ticket/7648
+        if mythtv.isRecording(str(recorder)):
+            current.append(mythtv.getCurrentRecording(str(recorder)))
     current = map(convert_program, current)
     current.sort(sort_programs_by_start)
 
