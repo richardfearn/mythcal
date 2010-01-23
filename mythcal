@@ -75,6 +75,7 @@ def convert_program(prog):
     """Converts a MythTV Program object to a dictionary"""
     return {
         "title": prog.title,
+        "subtitle": prog.subtitle,
         "channel": prog.channame,
         "start": naive_local_time_to_naive_utc_time(prog.starttime),
         "end": naive_local_time_to_naive_utc_time(prog.endtime),
@@ -173,8 +174,11 @@ if recordings != last_recordings:
         event_end = time.strftime(DATE_FORMAT, end)
         return create_event(title=title, start=event_start, end=event_end, content=content)
 
-    def create_programme_event(title, channel, start, end, content=None):
-        event_title = "%s (%s)" % (title, channel)
+    def create_programme_event(title, subtitle, channel, start, end, content=None):
+        if subtitle:
+            event_title = "%s: %s (%s)" % (title, subtitle, channel)
+        else:
+            event_title = "%s (%s)" % (title, channel)
         event_start = time.strftime(DATE_TIME_FORMAT, start)
         event_end = time.strftime(DATE_TIME_FORMAT, end)
         return create_event(title=event_title, start=event_start, end=event_end, content=content)
@@ -189,7 +193,7 @@ if recordings != last_recordings:
         if options.dry_run:
             print "    adding \"%s\"" % prog["title"]
         else:
-            event = create_programme_event(prog["title"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
+            event = create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
             event.batch_id = gdata.BatchId(text="insert-request")
             request_feed.AddInsert(entry=event)
             if len(request_feed.entry) == settings.calendar.max_batch_size:
