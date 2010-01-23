@@ -25,6 +25,9 @@ Getting started
 
 3. Install the required packages:
 
+    * MythTV Python bindings ("libmyth-python" for Ubuntu; "python-MythTV"
+      from RPM Fusion free for Fedora).
+
     * pytz ("python-tz" for Debian and Ubuntu; "pytz" for Fedora).
 
     * Google Data Python Client Library ("python-gdata" for Debian/Ubuntu/
