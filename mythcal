@@ -30,7 +30,7 @@ import pickle
 import os
 import sys
 
-from MythTV import MythTV
+from MythTV import MythBE
 import pytz
 import gdata.calendar.service
 import atom
@@ -88,7 +88,7 @@ def sort_programs_by_start(p1, p2):
 def get_recordings_from_backend():
     """Gets current and upcoming recordings from MythTV"""
 
-    mythtv = MythTV()
+    mythtv = MythBE()
 
     upcoming = mythtv.getUpcomingRecordings()
     upcoming = map(convert_program, upcoming)
