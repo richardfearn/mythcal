@@ -19,6 +19,8 @@
 CONFIG_FILE = "mythcal.conf"
 CACHE_FILE = "mythcal.cache"
 
+VERSION = "0.24.0"
+
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
 
@@ -56,7 +58,12 @@ settings = Values({
 
 parser = OptionParser()
 parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes")
+parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
 (options, args) = parser.parse_args()
+
+if options.version:
+    print "mythcal %s" % VERSION
+    sys.exit(0)
 
 # get pytz timezone object for local time zone
 if settings.mythtv.timezone not in pytz.all_timezones:
