@@ -158,7 +158,8 @@ if recordings != last_recordings:
 
     # get MythTV calendar
     calendars_feed = calendar_service.GetOwnCalendarsFeed()
-    cal = (c for c in calendars_feed.entry if c.title.text == settings.calendar.name).next()
+    # if a calendar isn't available, limited information is returned, and the title isn't provided
+    cal = (c for c in calendars_feed.entry if c.title and c.title.text == settings.calendar.name).next()
     batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % settings.calendar.id
 
     delete_existing_events()
