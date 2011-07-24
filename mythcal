@@ -64,8 +64,9 @@ if settings.mythtv.timezone not in pytz.all_timezones:
     sys.exit(1)
 time_zone = pytz.timezone(settings.mythtv.timezone)
 
-def naive_local_time_to_naive_utc_time(naive_local_time):
-    """Convert naive local time to naive UTC time"""
+def mythtv_time_to_naive_utc_time(mythtv_time):
+    """Convert MythTV time to naive UTC time"""
+    naive_local_time = datetime.fromtimestamp(mythtv_time.timestamp())
     aware_local_time = time_zone.localize(naive_local_time)
     aware_utc_time = aware_local_time.astimezone(pytz.utc)
     naive_utc_time = aware_utc_time.replace(tzinfo=None)
@@ -77,8 +78,8 @@ def convert_program(prog):
         "title": prog.title,
         "subtitle": prog.subtitle,
         "channel": prog.channame,
-        "start": naive_local_time_to_naive_utc_time(prog.starttime),
-        "end": naive_local_time_to_naive_utc_time(prog.endtime),
+        "start": mythtv_time_to_naive_utc_time(prog.starttime),
+        "end": mythtv_time_to_naive_utc_time(prog.endtime),
         "description": prog.description
     }
 
