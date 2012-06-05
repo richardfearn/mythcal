@@ -100,9 +100,16 @@ def sort_programs_by_start(p1, p2):
 def get_recordings_from_backend():
     """Gets current and upcoming recordings from MythTV"""
 
+    if options.verbose:
+        print "Getting recordings from MythTV backend..."
+
     mythtv = MythBE()
 
     upcoming = mythtv.getUpcomingRecordings()
+
+    if options.verbose:
+        print "    found %d upcoming recording(s)" % len(upcoming)
+
     upcoming = map(convert_program, upcoming)
     upcoming.sort(sort_programs_by_start)
 
@@ -112,6 +119,9 @@ def get_recordings_from_backend():
         # see http://svn.mythtv.org/trac/ticket/7648
         if mythtv.isRecording(str(recorder)):
             current.append(mythtv.getCurrentRecording(str(recorder)))
+    if options.verbose:
+        print "    found %d current recording(s)" % len(current)
+
     current = map(convert_program, current)
     current.sort(sort_programs_by_start)
 
@@ -123,9 +133,16 @@ recordings = get_recordings_from_backend()
 # load recording list from last time
 last_recordings = None
 if os.path.exists(CACHE_FILE):
+    if options.verbose:
+        print "Reading cache file..."
     f = open(CACHE_FILE, "r")
     last_recordings = pickle.load(f)
     f.close()
+    if options.verbose:
+        print "Done."
+else:
+    if options.verbose:
+        print "Cache file does not exist."
 
 def submit_batch_request(request, url):
     response_feed = calendar_service.ExecuteBatch(request, url)
@@ -143,7 +160,7 @@ def delete_existing_events():
             batch_request = gdata.calendar.CalendarEventFeed()
         for event in event_feed.entry:
             if options.verbose:
-                print "    deleting \"%s\"" % event.title.text
+                print "    will delete \"%s\"" % event.title.text
             if not options.dry_run:
                 event.batch_id = gdata.BatchId(text="delete-request")
                 batch_request.AddDelete(entry=event)
@@ -153,6 +170,8 @@ def delete_existing_events():
             else:
                 event_feed = None
         else:
+            if options.verbose:
+                print "    (sending delete request)"
             submit_batch_request(batch_request, batch_url)
             event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
     if options.verbose:
@@ -162,15 +181,23 @@ def delete_existing_events():
 if recordings != last_recordings:
 
     # get calendar service and log in
+    if options.verbose:
+        print "Logging into Google Calendar..."
     calendar_service = gdata.calendar.service.CalendarService()
     calendar_service.email = settings.google.username
     calendar_service.password = settings.google.password
     calendar_service.source = "mythcal"
     calendar_service.ProgrammaticLogin()
+    if options.verbose:
+        print "Done."
 
     # Get all calendars
+    if options.verbose:
+        print "Getting all calendars..."
     calendars_feed = calendar_service.GetOwnCalendarsFeed()
     calendars = list(calendars_feed.entry)
+    if options.verbose:
+        print "Done."
 
     # if a calendar isn't available, limited information is returned, and the title isn't provided
     # Warn about calendars for which we don't get complete information
@@ -222,21 +249,25 @@ if recordings != last_recordings:
         request_feed = gdata.calendar.CalendarEventFeed()
     for prog in recordings["current"] + recordings["future"]:
         if options.verbose:
-            print "    adding \"%s\"" % prog["title"]
+            print "    will add \"%s\"" % prog["title"]
         if not options.dry_run:
             event = create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
             event.batch_id = gdata.BatchId(text="insert-request")
             request_feed.AddInsert(entry=event)
             if len(request_feed.entry) == settings.calendar.max_batch_size:
+                if options.verbose:
+                    print "    (sending add request)"
                 submit_batch_request(request_feed, batch_url)
                 request_feed = gdata.calendar.CalendarEventFeed()
 
     # add 'last updated' event
     last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
     if options.verbose:
-        print "    adding \"%s\"" % last_update_text
+        print "    will add \"%s\"" % last_update_text
     if not options.dry_run:
         event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60))
+        if options.verbose:
+            print "    (sending add request)"
         event.batch_id = gdata.BatchId(text="insert-request")
         request_feed.AddInsert(entry=event)
         submit_batch_request(request_feed, batch_url)
@@ -254,3 +285,10 @@ if recordings != last_recordings:
 
     if options.verbose:
         print "Done."
+
+else:
+    if options.verbose:
+        print "Recordings have not changed; not updating calendar."
+
+if options.verbose:
+    print "Finished."
