@@ -78,5 +78,16 @@ Acknowledgements
 Thanks to Michael T. Dean and Raymond Wagner for pointing me in the direction
 of the MythTV Python bindings.
 
+Useful documentation
+====================
+
+Google Calendar APIs and Tools - Data API Developer's Guide: Python
+http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html
+
+Google Data Protocol - Batch Processing in the Google Data Protocol
+http://code.google.com/apis/gdata/docs/batch.html
+
+---------------------------------------
+
 Richard Fearn
 richardfearn@gmail.com
