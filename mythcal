@@ -164,10 +164,26 @@ if recordings != last_recordings:
     calendar_service.source = "mythcal"
     calendar_service.ProgrammaticLogin()
 
-    # get MythTV calendar
+    # Get all calendars
     calendars_feed = calendar_service.GetOwnCalendarsFeed()
+    calendars = list(calendars_feed.entry)
+
     # if a calendar isn't available, limited information is returned, and the title isn't provided
-    cal = (c for c in calendars_feed.entry if c.title and c.title.text == settings.calendar.name).next()
+    # Warn about calendars for which we don't get complete information
+    calendars_without_titles = [c for c in calendars if not c.title]
+    if calendars_without_titles:
+        print >>sys.stderr, "mythcal: calendar list is incomplete; your calendar may not be found"
+
+    # Try to find the specified calendar
+    calendars = [c for c in calendars if c.title]
+    calendars_by_name = dict((c.title.text, c) for c in calendars)
+    if settings.calendar.name not in calendars_by_name:
+        print >>sys.stderr, "mythcal: calendar '%s' not found" % settings.calendar.name
+        sys.exit(1)
+    else:
+        cal = calendars_by_name[settings.calendar.name]
+
+    # Build batch URL using the user-specified calendar ID
     batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % settings.calendar.id
 
     delete_existing_events()
