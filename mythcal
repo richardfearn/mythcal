@@ -57,13 +57,17 @@ settings = Values({
 })
 
 parser = OptionParser()
-parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes")
+parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes (implies -v)")
 parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
+parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="increase verbosity")
 (options, args) = parser.parse_args()
 
 if options.version:
     print "mythcal %s" % VERSION
     sys.exit(0)
+
+if options.dry_run:
+    options.verbose = True
 
 # get pytz timezone object for local time zone
 if settings.mythtv.timezone not in pytz.all_timezones:
@@ -131,16 +135,16 @@ def submit_batch_request(request, url):
 def delete_existing_events():
     """Deletes all events from the calendar"""
 
-    if options.dry_run:
+    if options.verbose:
         print "Deleting existing entries..."
     event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
     while event_feed and len(event_feed.entry):
         if not options.dry_run:
             batch_request = gdata.calendar.CalendarEventFeed()
         for event in event_feed.entry:
-            if options.dry_run:
+            if options.verbose:
                 print "    deleting \"%s\"" % event.title.text
-            else:
+            if not options.dry_run:
                 event.batch_id = gdata.BatchId(text="delete-request")
                 batch_request.AddDelete(entry=event)
         if options.dry_run:
@@ -151,7 +155,7 @@ def delete_existing_events():
         else:
             submit_batch_request(batch_request, batch_url)
             event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
-    if options.dry_run:
+    if options.verbose:
         print "Existing entries deleted."
 
 # update calendar, and output new recording list, if different
@@ -210,16 +214,16 @@ if recordings != last_recordings:
         event_end = time.strftime(DATE_TIME_FORMAT, end)
         return create_event(title=event_title, start=event_start, end=event_end, content=content)
 
-    if options.dry_run:
+    if options.verbose:
         print "Adding new entries..."
 
     # add an event for current/future recordings
     if not options.dry_run:
         request_feed = gdata.calendar.CalendarEventFeed()
     for prog in recordings["current"] + recordings["future"]:
-        if options.dry_run:
+        if options.verbose:
             print "    adding \"%s\"" % prog["title"]
-        else:
+        if not options.dry_run:
             event = create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
             event.batch_id = gdata.BatchId(text="insert-request")
             request_feed.AddInsert(entry=event)
@@ -229,24 +233,24 @@ if recordings != last_recordings:
 
     # add 'last updated' event
     last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
-    if options.dry_run:
+    if options.verbose:
         print "    adding \"%s\"" % last_update_text
-    else:
+    if not options.dry_run:
         event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60))
         event.batch_id = gdata.BatchId(text="insert-request")
         request_feed.AddInsert(entry=event)
         submit_batch_request(request_feed, batch_url)
 
-    if options.dry_run:
+    if options.verbose:
         print "New entries added."
 
     # update last recording list
-    if options.dry_run:
+    if options.verbose:
         print "Updating cache..."
-    else:
+    if not options.dry_run:
         f = open(CACHE_FILE, "w")
         pickle.dump(recordings, f)
         f.close()
 
-    if options.dry_run:
+    if options.verbose:
         print "Done."
