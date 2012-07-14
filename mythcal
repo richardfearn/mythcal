@@ -106,6 +106,7 @@ def get_recordings_from_backend():
     mythtv = MythBE()
 
     upcoming = mythtv.getUpcomingRecordings()
+    upcoming = list(upcoming) # convert listiterator to list
 
     if options.verbose:
         print "    found %d upcoming recording(s)" % len(upcoming)
