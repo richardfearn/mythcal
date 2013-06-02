@@ -317,10 +317,23 @@ if recordings != last_recordings:
 
     # add 'last updated' event
     last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
+    c = ""
+    if recordings["current"]:
+        c += "Now recording:\n"
+        for p in recordings["current"]:
+            c += "    %s (%s)\n" % (p["title"], p["channel"])
+    else:
+        c += "Not currently recording.\n"
+    c += "\n"
+    if recordings["future"]:
+        p = recordings["future"][0]
+        c += "Next recording:\n    %s (%s, %s)" % (p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M"))
+    else:
+        c += "No future recordings scheduled.\n"
     if options.verbose:
         print("    will add \"%s\"" % last_update_text)
     if not options.dry_run:
-        event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60))
+        event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60), content=c)
         service.events().insert(calendarId = settings.calendar.id, body=event).execute()
 
     if options.verbose:
