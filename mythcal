@@ -19,7 +19,7 @@
 CONFIG_FILE = "mythcal.conf"
 CACHE_FILE = "mythcal.cache"
 
-VERSION = "0.25.1"
+VERSION = "0.26.0"
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
