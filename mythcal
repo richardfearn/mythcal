@@ -75,13 +75,36 @@ if settings.mythtv.timezone not in pytz.all_timezones:
     sys.exit(1)
 time_zone = pytz.timezone(settings.mythtv.timezone)
 
+DATE_TIME_DEBUG = False
+
 def mythtv_time_to_naive_utc_time(mythtv_time):
+
     """Convert MythTV time to naive UTC time"""
-    naive_local_time = datetime.fromtimestamp(mythtv_time.timestamp())
-    aware_local_time = time_zone.localize(naive_local_time)
-    aware_utc_time = aware_local_time.astimezone(pytz.utc)
-    naive_utc_time = aware_utc_time.replace(tzinfo=None)
-    return naive_utc_time
+
+    if DATE_TIME_DEBUG:
+        print "converting time..."
+
+    # The timestamp we get from a MythTV datetime object is affected by its timezone...
+    aware_local_mythtv_time = mythtv_time
+    if DATE_TIME_DEBUG:
+        print "  %s\t%s\t%d" % (aware_local_mythtv_time, aware_local_mythtv_time.timetuple(), aware_local_mythtv_time.timestamp())
+
+    # ...so we convert to UTC to ensure we get a POSIX timestamp from it
+    aware_utc_mythtv_time = aware_local_mythtv_time.astimezone(pytz.utc)
+    if DATE_TIME_DEBUG:
+        print "  %s\t%s\t%d" % (aware_utc_mythtv_time, aware_utc_mythtv_time.timetuple(), aware_utc_mythtv_time.timestamp())
+
+    # Create a standard datetime that represents the same point in time...
+    aware_utc_datetime = datetime.fromtimestamp(aware_utc_mythtv_time.timestamp(), pytz.utc)
+    if DATE_TIME_DEBUG:
+        print "  %s\t%s" % (aware_utc_datetime, aware_utc_datetime.timetuple())
+
+    # ...and drop the timezone
+    naive_utc_datetime = aware_utc_datetime.replace(tzinfo=None)
+    if DATE_TIME_DEBUG:
+        print "  %s\t\t%s" % (naive_utc_datetime, naive_utc_datetime.timetuple())
+
+    return naive_utc_datetime
 
 def convert_program(prog):
     """Converts a MythTV Program object to a dictionary"""
