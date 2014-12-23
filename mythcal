@@ -2,7 +2,7 @@
 
 # mythcal
 
-# Copyright 2009-2012 Richard Fearn
+# Copyright 2009-2014 Richard Fearn
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +18,31 @@
 
 CONFIG_FILE = "mythcal.conf"
 CACHE_FILE = "mythcal.cache"
+CREDENTIALS_FILE = "mythcal.credentials"
 
 VERSION = "0.27.0"
 
+# From https://developers.google.com/accounts/docs/OAuth2:
+#     "...a client secret, which you embed in the source code of your
+#     application. (In this context, the client secret is obviously not treated
+#     as a secret.)"
+OAUTH_CLIENT_ID = '17959633059-62g87ggkkr0a1lub43egv3rgfp7afphq.apps.googleusercontent.com'
+OAUTH_CLIENT_SECRET = 'wlkk_7uk8La2Ceqp9OY49qSH'
+OAUTH_SCOPE = 'https://www.googleapis.com/auth/calendar'
+OAUTH_REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
+
+AUTH_MESSAGE_1 = """Visit this URL in your browser:
+
+  %s
+
+When you have granted mythcal access to your calendar, enter the code you are
+given below.
+"""
+
+AUTH_MESSAGE_2 = "Done! You can now run mythcal without the `--auth` flag."
+
 DATE_FORMAT = "%Y-%m-%d"
-DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
+DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 
 import ConfigParser
 from optparse import Values, OptionParser
@@ -34,9 +54,15 @@ import sys
 
 from MythTV import MythBE
 import pytz
-import gdata.calendar.service
-import atom
 import time
+
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.file import Storage
+
+import httplib2
+from apiclient.discovery import build
+from oauth2client.file import Storage
+from apiclient.errors import HttpError
 
 config = ConfigParser.RawConfigParser()
 config.read(CONFIG_FILE)
@@ -45,18 +71,13 @@ settings = Values({
         "mythtv": Values({
                 "timezone": config.get("mythtv", "timezone")
         }),
-        "google": Values({
-                "username": config.get("google", "username"),
-                "password": config.get("google", "password")
-        }),
         "calendar": Values({
-                "name": config.get("calendar", "name"),
                 "id": config.get("calendar", "id"),
-                "max_batch_size" : int(config.get("calendar", "max_batch_size"))
         })
 })
 
 parser = OptionParser()
+parser.add_option("-a", "--auth",    action="store_true", dest="auth",    default=False, help="authenticate (required before using mythcal for the first time)")
 parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes (implies -v)")
 parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
 parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="increase verbosity")
@@ -68,6 +89,32 @@ if options.version:
 
 if options.dry_run:
     options.verbose = True
+
+if options.auth:
+
+    flow = OAuth2WebServerFlow(
+        client_id = OAUTH_CLIENT_ID,
+        client_secret = OAUTH_CLIENT_SECRET,
+        scope = OAUTH_SCOPE,
+        redirect_uri = OAUTH_REDIRECT_URI
+    )
+
+    auth_uri = flow.step1_get_authorize_url()
+    print AUTH_MESSAGE_1 % auth_uri
+
+    auth_code = raw_input("Code: ")
+    print
+
+    credentials = flow.step2_exchange(auth_code)
+    storage = Storage(CREDENTIALS_FILE)
+    storage.put(credentials)
+    print AUTH_MESSAGE_2
+    sys.exit(0)
+
+# check for existence of credentials
+if not os.path.isfile(CREDENTIALS_FILE):
+    print >>sys.stderr, "mythcal: no credentials file. You need to run `mythcal --auth` first"
+    sys.exit(1)
 
 # get pytz timezone object for local time zone
 if settings.mythtv.timezone not in pytz.all_timezones:
@@ -112,8 +159,8 @@ def convert_program(prog):
         "title": prog.title,
         "subtitle": prog.subtitle,
         "channel": prog.channame,
-        "start": mythtv_time_to_naive_utc_time(prog.starttime),
-        "end": mythtv_time_to_naive_utc_time(prog.endtime),
+        "start": int(prog.starttime.timestamp()),
+        "end": int(prog.endtime.timestamp()),
         "description": prog.description
     }
 
@@ -178,26 +225,17 @@ def delete_existing_events():
 
     if options.verbose:
         print "Deleting existing entries..."
-    event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
-    while event_feed and len(event_feed.entry):
-        if not options.dry_run:
-            batch_request = gdata.calendar.CalendarEventFeed()
-        for event in event_feed.entry:
+    result = service.events().list(calendarId = settings.calendar.id).execute()
+    while result:
+        for item in result["items"]:
             if options.verbose:
-                print "    will delete \"%s\"" % event.title.text
+                print "    will delete \"%s\"" % item["summary"]
             if not options.dry_run:
-                event.batch_id = gdata.BatchId(text="delete-request")
-                batch_request.AddDelete(entry=event)
-        if options.dry_run:
-            if event_feed.GetNextLink():
-                event_feed = calendar_service.GetCalendarEventFeed(event_feed.GetNextLink().href)
-            else:
-                event_feed = None
+                service.events().delete(calendarId = settings.calendar.id, eventId = item["id"]).execute()
+        if "nextPageToken" in result:
+            result = service.events().list(calendarId = settings.calendar.id, pageToken = result["nextPageToken"]).execute()
         else:
-            if options.verbose:
-                print "    (sending delete request)"
-            submit_batch_request(batch_request, batch_url)
-            event_feed = calendar_service.GetCalendarEventFeed(cal.content.src)
+            result = None
     if options.verbose:
         print "Existing entries deleted."
 
@@ -207,82 +245,68 @@ if recordings != last_recordings:
     # get calendar service and log in
     if options.verbose:
         print "Logging into Google Calendar..."
-    calendar_service = gdata.calendar.service.CalendarService()
-    calendar_service.email = settings.google.username
-    calendar_service.password = settings.google.password
-    calendar_service.source = "mythcal"
-    calendar_service.ProgrammaticLogin()
+    storage = Storage(CREDENTIALS_FILE)
+    credentials = storage.get()
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+    service = build("calendar", "v3", http=http)
     if options.verbose:
         print "Done."
 
     # Get all calendars
     if options.verbose:
-        print "Getting all calendars..."
-    calendars_feed = calendar_service.GetOwnCalendarsFeed()
-    calendars = list(calendars_feed.entry)
+        print "Getting calendar..."
+    try:
+        result = service.calendars().get(calendarId = settings.calendar.id).execute()
+    except HttpError, e:
+        print >>sys.stderr, "mythcal: could not get calendar with id '%s':" % settings.calendar.id
+        print >>sys.stderr, e.content
+        sys.exit(1)
     if options.verbose:
         print "Done."
 
-    # if a calendar isn't available, limited information is returned, and the title isn't provided
-    # Warn about calendars for which we don't get complete information
-    calendars_without_titles = [c for c in calendars if not c.title]
-    if calendars_without_titles:
-        print >>sys.stderr, "mythcal: calendar list is incomplete; your calendar may not be found"
-
-    # Try to find the specified calendar
-    calendars = [c for c in calendars if c.title]
-    calendars_by_name = dict((c.title.text, c) for c in calendars)
-    if settings.calendar.name not in calendars_by_name:
-        print >>sys.stderr, "mythcal: calendar '%s' not found" % settings.calendar.name
-        sys.exit(1)
-    else:
-        cal = calendars_by_name[settings.calendar.name]
-
-    # Build batch URL using the user-specified calendar ID
-    batch_url = "http://www.google.com/calendar/feeds/%s/private/full/batch" % settings.calendar.id
-
     delete_existing_events()
 
-    def create_event(title, start, end, content=None):
-        event = gdata.calendar.CalendarEventEntry()
-        event.title = atom.Title(text=title)
-        if content:
-            event.content = atom.Content(text=content)
-        event.when.append(gdata.calendar.When(start_time=start, end_time=end))
-        return event
-
     def create_all_day_event(title, start, end, content=None):
-        event_start = time.strftime(DATE_FORMAT, start)
-        event_end = time.strftime(DATE_FORMAT, end)
-        return create_event(title=title, start=event_start, end=event_end, content=content)
+        event = {
+            "summary": title,
+            "start": {
+                "date": time.strftime(DATE_FORMAT, start),
+            },
+            "end": {
+                "date": time.strftime(DATE_FORMAT, end),
+            },
+            "description": content
+        }
+        return event
 
     def create_programme_event(title, subtitle, channel, start, end, content=None):
         if subtitle:
             event_title = "%s: %s (%s)" % (title, subtitle, channel)
         else:
             event_title = "%s (%s)" % (title, channel)
-        event_start = time.strftime(DATE_TIME_FORMAT, start)
-        event_end = time.strftime(DATE_TIME_FORMAT, end)
-        return create_event(title=event_title, start=event_start, end=event_end, content=content)
+        event = {
+            "summary": event_title,
+            "start": {
+                "dateTime": datetime.fromtimestamp(start, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+            },
+            "end": {
+                "dateTime": datetime.fromtimestamp(end, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+            },
+            "description": content
+        }
+        return event
 
     if options.verbose:
         print "Adding new entries..."
 
     # add an event for current/future recordings
-    if not options.dry_run:
-        request_feed = gdata.calendar.CalendarEventFeed()
     for prog in recordings["current"] + recordings["future"]:
         if options.verbose:
             print "    will add \"%s\"" % prog["title"]
         if not options.dry_run:
-            event = create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"].timetuple(), prog["end"].timetuple(), prog["description"])
-            event.batch_id = gdata.BatchId(text="insert-request")
-            request_feed.AddInsert(entry=event)
-            if len(request_feed.entry) == settings.calendar.max_batch_size:
-                if options.verbose:
-                    print "    (sending add request)"
-                submit_batch_request(request_feed, batch_url)
-                request_feed = gdata.calendar.CalendarEventFeed()
+            event = create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"], prog["end"], prog["description"])
+            service.events().insert(calendarId = settings.calendar.id, body=event).execute()
 
     # add 'last updated' event
     last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
@@ -290,11 +314,7 @@ if recordings != last_recordings:
         print "    will add \"%s\"" % last_update_text
     if not options.dry_run:
         event = create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60))
-        if options.verbose:
-            print "    (sending add request)"
-        event.batch_id = gdata.BatchId(text="insert-request")
-        request_feed.AddInsert(entry=event)
-        submit_batch_request(request_feed, batch_url)
+        service.events().insert(calendarId = settings.calendar.id, body=event).execute()
 
     if options.verbose:
         print "New entries added."
