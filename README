@@ -1,5 +1,5 @@
 mythcal
-Copyright 2009-2012 Richard Fearn
+Copyright 2009-2014 Richard Fearn
 
 Introduction
 ============
@@ -30,8 +30,7 @@ Getting started
 
     * pytz ("python-tz" for Debian and Ubuntu; "pytz" for Fedora).
 
-    * Google Data Python Client Library ("python-gdata" for Debian/Ubuntu/
-      Fedora).
+    * Google APIs Client Library for Python ("python-googleapi" for Ubuntu).
 
 4. Copy the template configuration file, mythcal.conf.template, to
    mythcal.conf, and add the missing settings. The sections are:
@@ -40,23 +39,22 @@ Getting started
       zoneinfo time zone name such as "Europe/London". To find an appropriate
       time zone name, use the supplied 'timezones' script (see below).
 
-    * [google] - your Google username and password.
+    * [calendar] - details about your Google Calendar. To find the "id", go into
+      Google Calendar Settings, open the "Calendars" tab, click the calendar you
+      want to use, and look in the "Calendar Address" section. The Calendar ID
+      should be displayed: it will look something like
+      "abc123def@group.calendar.google.com". Please remember: USE A SEPARATE
+      CALENDAR FOR MYTHCAL, or your appointments will be deleted!
 
-    * [calendar] - details about your Google Calendar. "name" means the
-      name of the calendar. To find the "id", go into Google Calendar Settings,
-      open the "Calendars" tab, click the calendar you want to use, and look
-      in the "Calendar Address" section. The Calendar ID should be displayed:
-      it will look something like "abc123def@group.calendar.google.com". Please
-      remember: USE A SEPARATE CALENDAR FOR MYTHCAL, or your appointments will
-      be deleted! "max_batch_size" is the maximum number of events that will be
-      combined into a single batch request when adding events. 25 should be OK.
+5. Give mythcal permission to access your calendar. Run `mythcal --auth` and
+   follow the instructions.
 
-5. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
+6. Run mythcal manually with the "--dry-run" or "-n" option. This will tell you
    what's going to be changed in your Google Calendar. Hopefully it won't tell
    you that your important appointments are going to be deleted, because you'll
    be using a *separate* calendar for mythcal!
 
-6. If everything looks good, set up a cron job which will execute mythcal as
+7. If everything looks good, set up a cron job which will execute mythcal as
    often as you like. The command being run should look something like this:
 
      cd /path/to/mythcal/directory && ./mythcal
