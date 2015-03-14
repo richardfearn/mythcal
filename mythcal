@@ -189,7 +189,10 @@ def get_recordings_from_backend():
         # str(...) required due to MythTV issue #7648
         # see http://svn.mythtv.org/trac/ticket/7648
         if mythtv.isRecording(str(recorder)):
-            current.append(mythtv.getCurrentRecording(str(recorder)))
+            prog = mythtv.getCurrentRecording(str(recorder))
+            # don't include live programmes (issue 16)
+            if prog.get("recgroup") != "LiveTV":
+                current.append(prog)
     if options.verbose:
         print "    found %d current recording(s)" % len(current)
 
