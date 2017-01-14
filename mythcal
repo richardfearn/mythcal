@@ -327,7 +327,7 @@ if recordings != last_recordings:
     c += "\n"
     if recordings["future"]:
         p = recordings["future"][0]
-        c += "Next recording:\n    %s (%s, %s)" % (p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M"))
+        c += "Next recording:\n    %s (%s, %s)" % (p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M, %a %d %b"))
     else:
         c += "No future recordings scheduled.\n"
     if options.verbose:
