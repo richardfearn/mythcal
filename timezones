@@ -1,4 +1,4 @@
-#! /usr/bin/python -tt
+#! /usr/bin/python3
 
 # timezones
 # Displays zoneinfo time zone names
@@ -21,7 +21,7 @@ import sys
 import pytz
 
 if len(sys.argv) not in (1, 2):
-	print >>sys.stderr, "usage: timezones [text]"
+	print("usage: timezones [text]", file=sys.stderr)
 	sys.exit(1)
 
 if len(sys.argv) == 2:
@@ -31,4 +31,4 @@ else:
 	matches = pytz.all_timezones
 
 for m in matches:
-	print m
+	print(m)
