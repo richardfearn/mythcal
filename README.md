@@ -24,12 +24,13 @@ of upcoming recordings.
 
 3. Install the required packages:
 
-    * MythTV Python bindings (`"libmyth-python"` for Ubuntu; `"python-MythTV"`
+    * MythTV Python bindings (`"libmyth-python"` for Ubuntu; `"python3-MythTV"`
       from RPM Fusion free for Fedora).
 
-    * pytz (`"python-tz"` for Debian and Ubuntu; `"pytz"` for Fedora).
+    * pytz (`"python3-tz"` for Ubuntu; `"python3-pytz"` for Fedora).
 
-    * Google APIs Client Library for Python (`"python-googleapi"` for Ubuntu).
+    * Google APIs Client Library for Python (`"python3-googleapi"` for Ubuntu;
+      `"python3-google-api-client"` for Fedora).
 
 4. Copy the template configuration file, `mythcal.conf.template`, to
    `mythcal.conf`, and add the missing settings. The sections are:
