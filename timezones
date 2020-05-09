@@ -3,7 +3,7 @@
 # timezones
 # Displays zoneinfo time zone names
 
-# Copyright 2009 Richard Fearn
+# Copyright 2009-2020 Richard Fearn
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
