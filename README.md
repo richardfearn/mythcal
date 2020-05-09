@@ -40,8 +40,9 @@ of upcoming recordings.
       time zone name, use the supplied `timezones` script (see below).
 
     * `[calendar]` - details about your Google Calendar. To find the `"id"`, go into
-      Google Calendar Settings, open the "Calendars" tab, click the calendar you
-      want to use, and look in the "Calendar Address" section. The Calendar ID
+      Google Calendar Settings, click the calendar you want to use under
+      "Settings for my calendars" on the left-hand side, and look in the
+      "Integrate calendar" section. The Calendar ID
       should be displayed: it will look something like
       `"abc123def@group.calendar.google.com"`. Please remember: USE A SEPARATE
       CALENDAR FOR MYTHCAL, or your appointments will be deleted!
