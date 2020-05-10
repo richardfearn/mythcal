@@ -19,7 +19,7 @@
 """mythcal - synchronizes your MythTV recording schedule to a Google calendar"""
 
 import configparser
-from optparse import OptionParser
+import argparse
 from datetime import datetime
 import pickle
 import os
@@ -188,16 +188,16 @@ class Mythcal:
 
         self.calendar_id = config.get("calendar", "id")
 
-        parser = OptionParser()
-        parser.add_option("-a", "--auth", action="store_true", dest="auth", default=False,
-                          help="authenticate (required before using mythcal for the first time)")
-        parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False,
-                          help="perform a trial run; don't make any changes (implies -v)")
-        parser.add_option("-V", "--version", action="store_true", dest="version", default=False,
-                          help="show version and exit")
-        parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
-                          help="increase verbosity")
-        (self.options, _) = parser.parse_args()
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-a", "--auth", action="store_true", dest="auth",
+                            help="authenticate (required before using mythcal for the first time)")
+        parser.add_argument("-n", "--dry-run", action="store_true", dest="dry_run",
+                            help="perform a trial run; don't make any changes (implies -v)")
+        parser.add_argument("-V", "--version", action="store_true", dest="version",
+                            help="show version and exit")
+        parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
+                            help="increase verbosity")
+        self.options = parser.parse_args()
 
         if self.options.version:
             print("mythcal %s" % VERSION)
