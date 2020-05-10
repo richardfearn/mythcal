@@ -16,6 +16,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import configparser
+from optparse import Values, OptionParser
+from datetime import datetime
+import pickle
+import os
+import sys
+from operator import itemgetter
+import time
+
+from MythTV import MythBE
+import pytz
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.file import Storage
+import httplib2
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
 CONFIG_FILE = "mythcal.conf"
 CACHE_FILE = "mythcal.cache"
 CREDENTIALS_FILE = "mythcal.credentials"
@@ -43,26 +60,6 @@ AUTH_MESSAGE_2 = "Done! You can now run mythcal without the `--auth` flag."
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
-
-import configparser
-from optparse import Values, OptionParser
-
-from datetime import datetime
-import pickle
-import os
-import sys
-from operator import itemgetter
-
-from MythTV import MythBE
-import pytz
-import time
-
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client.file import Storage
-
-import httplib2
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 config = configparser.RawConfigParser()
 config.read(CONFIG_FILE)
