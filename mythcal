@@ -119,10 +119,8 @@ class Mythcal:
 
         current = []
         for recorder in mythtv.getRecorderList():
-            # str(...) required due to MythTV issue #7648
-            # see http://svn.mythtv.org/trac/ticket/7648
-            if mythtv.isRecording(str(recorder)):
-                prog = mythtv.getCurrentRecording(str(recorder))
+            if mythtv.isRecording(recorder):
+                prog = mythtv.getCurrentRecording(recorder)
                 # don't include live programmes (issue 16)
                 if prog.get("recgroup") != "LiveTV":
                     current.append(prog)
