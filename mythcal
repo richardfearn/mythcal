@@ -17,7 +17,7 @@
 # limitations under the License.
 
 import configparser
-from optparse import Values, OptionParser
+from optparse import OptionParser
 from datetime import datetime
 import pickle
 import os
@@ -65,7 +65,7 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 class Mythcal:
 
     def __init__(self):
-        self.settings = None
+        self.calendar_id = None
         self.options = None
         self.service = None
 
@@ -127,15 +127,15 @@ class Mythcal:
 
         if self.options.verbose:
             print("Deleting existing entries...")
-        result = self.service.events().list(calendarId=self.settings.calendar.id).execute()
+        result = self.service.events().list(calendarId=self.calendar_id).execute()
         while result:
             for item in result["items"]:
                 if self.options.verbose:
                     print("    will delete \"%s\"" % item["summary"])
                 if not self.options.dry_run:
-                    self.service.events().delete(calendarId=self.settings.calendar.id, eventId=item["id"]).execute()
+                    self.service.events().delete(calendarId=self.calendar_id, eventId=item["id"]).execute()
             if "nextPageToken" in result:
-                result = self.service.events().list(calendarId=self.settings.calendar.id, pageToken=result["nextPageToken"]).execute()
+                result = self.service.events().list(calendarId=self.calendar_id, pageToken=result["nextPageToken"]).execute()
             else:
                 result = None
         if self.options.verbose:
@@ -178,11 +178,7 @@ class Mythcal:
         config = configparser.RawConfigParser()
         config.read(CONFIG_FILE)
 
-        self.settings = Values({
-            "calendar": Values({
-                "id": config.get("calendar", "id"),
-            })
-        })
+        self.calendar_id = config.get("calendar", "id")
 
         parser = OptionParser()
         parser.add_option("-a", "--auth",    action="store_true", dest="auth",    default=False, help="authenticate (required before using mythcal for the first time)")
@@ -259,9 +255,9 @@ class Mythcal:
             if self.options.verbose:
                 print("Getting calendar...")
             try:
-                result = self.service.calendars().get(calendarId=self.settings.calendar.id).execute()
+                result = self.service.calendars().get(calendarId=self.calendar_id).execute()
             except HttpError as e:
-                print("mythcal: could not get calendar with id '%s':" % self.settings.calendar.id, file=sys.stderr)
+                print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
                 print(e.content, file=sys.stderr)
                 sys.exit(1)
             if self.options.verbose:
@@ -278,7 +274,7 @@ class Mythcal:
                     print("    will add \"%s\"" % prog["title"])
                 if not self.options.dry_run:
                     event = self.create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"], prog["end"], prog["description"])
-                    self.service.events().insert(calendarId=self.settings.calendar.id, body=event).execute()
+                    self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             # add 'last updated' event
             last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
@@ -299,7 +295,7 @@ class Mythcal:
                 print("    will add \"%s\"" % last_update_text)
             if not self.options.dry_run:
                 event = self.create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60), content=c)
-                self.service.events().insert(calendarId=self.settings.calendar.id, body=event).execute()
+                self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             if self.options.verbose:
                 print("New entries added.")
