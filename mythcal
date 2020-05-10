@@ -102,7 +102,7 @@ class Mythcal:
 
         mythtv = MythBE()
 
-        upcoming = mythtv.getUpcomingRecordings()
+        upcoming = mythtv.getUpcomingRecordings()  # pylint: disable=no-value-for-parameter
         upcoming = list(upcoming)  # convert listiterator to list
 
         if self.options.verbose:
