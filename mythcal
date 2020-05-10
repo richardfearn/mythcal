@@ -246,42 +246,7 @@ class Mythcal:
 
             self.delete_existing_events()
 
-            if self.options.verbose:
-                print("Adding new entries...")
-
-            # add an event for current/future recordings
-            for prog in recordings["current"] + recordings["future"]:
-                if self.options.verbose:
-                    print("    will add \"%s\"" % prog["title"])
-                if not self.options.dry_run:
-                    event = self.create_programme_event(prog)
-                    self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
-
-            # add 'last updated' event
-            last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
-            description = ""
-            if recordings["current"]:
-                description += "Now recording:\n"
-                for prog in recordings["current"]:
-                    description += "    %s (%s)\n" % (prog["title"], prog["channel"])
-            else:
-                description += "Not currently recording.\n"
-            description += "\n"
-            if recordings["future"]:
-                prog = recordings["future"][0]
-                description += "Next recording:\n    %s (%s, %s)" % (
-                    prog["title"], prog["channel"], datetime.fromtimestamp(prog["start"]).strftime("%H:%M, %a %d %b"))
-            else:
-                description += "No future recordings scheduled.\n"
-            if self.options.verbose:
-                print("    will add \"%s\"" % last_update_text)
-            if not self.options.dry_run:
-                event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
-                                                  end=time.gmtime(time.time() + 24*60*60), content=description)
-                self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
-
-            if self.options.verbose:
-                print("New entries added.")
+            self.add_events(recordings)
 
             # update last recording list
             if self.options.verbose:
@@ -354,6 +319,61 @@ class Mythcal:
 
         if self.options.verbose:
             print("Done.")
+
+    def add_events(self, recordings):
+        """Adds new events to the calendar"""
+
+        if self.options.verbose:
+            print("Adding new entries...")
+
+        self.add_programme_events(recordings)
+        self.add_last_updated_event(recordings)
+
+        if self.options.verbose:
+            print("New entries added.")
+
+    def add_programme_events(self, recordings):
+        """Adds an event for current/future recordings"""
+
+        for prog in recordings["current"] + recordings["future"]:
+
+            if self.options.verbose:
+                print("    will add \"%s\"" % prog["title"])
+
+            if not self.options.dry_run:
+                event = self.create_programme_event(prog)
+                self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
+
+    def add_last_updated_event(self, recordings):
+        """Adds the 'last updated' event"""
+
+        last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
+
+        description = ""
+
+        if recordings["current"]:
+            description += "Now recording:\n"
+            for prog in recordings["current"]:
+                description += "    %s (%s)\n" % (prog["title"], prog["channel"])
+        else:
+            description += "Not currently recording.\n"
+
+        description += "\n"
+
+        if recordings["future"]:
+            prog = recordings["future"][0]
+            description += "Next recording:\n    %s (%s, %s)" % (
+                prog["title"], prog["channel"], datetime.fromtimestamp(prog["start"]).strftime("%H:%M, %a %d %b"))
+        else:
+            description += "No future recordings scheduled.\n"
+
+        if self.options.verbose:
+            print("    will add \"%s\"" % last_update_text)
+
+        if not self.options.dry_run:
+            event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
+                                              end=time.gmtime(time.time() + 24*60*60), content=description)
+            self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
     @staticmethod
     def auth():
