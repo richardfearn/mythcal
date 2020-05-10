@@ -235,18 +235,7 @@ class Mythcal:
         recordings = self.get_recordings_from_backend()
 
         # load recording list from last time
-        last_recordings = None
-        if os.path.exists(CACHE_FILE):
-            if self.options.verbose:
-                print("Reading cache file...")
-            cache_file = open(CACHE_FILE, "rb")
-            last_recordings = pickle.load(cache_file)
-            cache_file.close()
-            if self.options.verbose:
-                print("Done.")
-        else:
-            if self.options.verbose:
-                print("Cache file does not exist.")
+        last_recordings = self.read_cache()
 
         # update calendar, and output new recording list, if different
         if recordings != last_recordings:
@@ -330,6 +319,27 @@ class Mythcal:
 
         if self.options.verbose:
             print("Finished.")
+
+    def read_cache(self):
+        """Reads the cache file"""
+
+        if os.path.exists(CACHE_FILE):
+
+            if self.options.verbose:
+                print("Reading cache file...")
+
+            with open(CACHE_FILE, "rb") as cache_file:
+                last_recordings = pickle.load(cache_file)
+
+            if self.options.verbose:
+                print("Done.")
+
+            return last_recordings
+
+        if self.options.verbose:
+            print("Cache file does not exist.")
+
+        return None
 
     @staticmethod
     def auth():
