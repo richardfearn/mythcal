@@ -242,17 +242,7 @@ class Mythcal:
 
             self.create_calendar_service()
 
-            # Get all calendars
-            if self.options.verbose:
-                print("Getting calendar...")
-            try:
-                self.service.calendars().get(calendarId=self.calendar_id).execute()
-            except HttpError as ex:
-                print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
-                print(ex.content, file=sys.stderr)
-                sys.exit(1)
-            if self.options.verbose:
-                print("Done.")
+            self.check_calendar()
 
             self.delete_existing_events()
 
@@ -345,6 +335,22 @@ class Mythcal:
         http = credentials.authorize(http)
 
         self.service = build("calendar", "v3", http=http)
+
+        if self.options.verbose:
+            print("Done.")
+
+    def check_calendar(self):
+        """Attempts to get the user-specified calendar"""
+
+        if self.options.verbose:
+            print("Getting calendar...")
+
+        try:
+            self.service.calendars().get(calendarId=self.calendar_id).execute()
+        except HttpError as ex:
+            print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
+            print(ex.content, file=sys.stderr)
+            sys.exit(1)
 
         if self.options.verbose:
             print("Done.")
