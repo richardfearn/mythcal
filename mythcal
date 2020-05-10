@@ -135,7 +135,8 @@ class Mythcal:
                 if not self.options.dry_run:
                     self.service.events().delete(calendarId=self.calendar_id, eventId=item["id"]).execute()
             if "nextPageToken" in result:
-                result = self.service.events().list(calendarId=self.calendar_id, pageToken=result["nextPageToken"]).execute()
+                token = result["nextPageToken"]
+                result = self.service.events().list(calendarId=self.calendar_id, pageToken=token).execute()
             else:
                 result = None
         if self.options.verbose:
@@ -156,20 +157,20 @@ class Mythcal:
         return event
 
     @staticmethod
-    def create_programme_event(title, subtitle, channel, start, end, content=None):
-        if subtitle:
-            event_title = "%s: %s (%s)" % (title, subtitle, channel)
+    def create_programme_event(prog):
+        if prog["subtitle"]:
+            event_title = "%s: %s (%s)" % (prog["title"], prog["subtitle"], prog["channel"])
         else:
-            event_title = "%s (%s)" % (title, channel)
+            event_title = "%s (%s)" % (prog["title"], prog["channel"])
         event = {
             "summary": event_title,
             "start": {
-                "dateTime": datetime.fromtimestamp(start, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+                "dateTime": datetime.fromtimestamp(prog["start"], tz=pytz.utc).strftime(DATE_TIME_FORMAT),
             },
             "end": {
-                "dateTime": datetime.fromtimestamp(end, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+                "dateTime": datetime.fromtimestamp(prog["end"], tz=pytz.utc).strftime(DATE_TIME_FORMAT),
             },
-            "description": content
+            "description": prog["description"]
         }
         return event
 
@@ -181,10 +182,14 @@ class Mythcal:
         self.calendar_id = config.get("calendar", "id")
 
         parser = OptionParser()
-        parser.add_option("-a", "--auth",    action="store_true", dest="auth",    default=False, help="authenticate (required before using mythcal for the first time)")
-        parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes (implies -v)")
-        parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
-        parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="increase verbosity")
+        parser.add_option("-a", "--auth", action="store_true", dest="auth", default=False,
+                          help="authenticate (required before using mythcal for the first time)")
+        parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False,
+                          help="perform a trial run; don't make any changes (implies -v)")
+        parser.add_option("-V", "--version", action="store_true", dest="version", default=False,
+                          help="show version and exit")
+        parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                          help="increase verbosity")
         (self.options, args) = parser.parse_args()
 
         if self.options.version:
@@ -255,7 +260,7 @@ class Mythcal:
             if self.options.verbose:
                 print("Getting calendar...")
             try:
-                result = self.service.calendars().get(calendarId=self.calendar_id).execute()
+                self.service.calendars().get(calendarId=self.calendar_id).execute()
             except HttpError as e:
                 print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
                 print(e.content, file=sys.stderr)
@@ -273,7 +278,7 @@ class Mythcal:
                 if self.options.verbose:
                     print("    will add \"%s\"" % prog["title"])
                 if not self.options.dry_run:
-                    event = self.create_programme_event(prog["title"], prog["subtitle"], prog["channel"], prog["start"], prog["end"], prog["description"])
+                    event = self.create_programme_event(prog)
                     self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             # add 'last updated' event
@@ -288,13 +293,15 @@ class Mythcal:
             c += "\n"
             if recordings["future"]:
                 p = recordings["future"][0]
-                c += "Next recording:\n    %s (%s, %s)" % (p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M, %a %d %b"))
+                c += "Next recording:\n    %s (%s, %s)" % (
+                    p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M, %a %d %b"))
             else:
                 c += "No future recordings scheduled.\n"
             if self.options.verbose:
                 print("    will add \"%s\"" % last_update_text)
             if not self.options.dry_run:
-                event = self.create_all_day_event(title=last_update_text, start=time.gmtime(), end=time.gmtime(time.time() + 24*60*60), content=c)
+                event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
+                                                  end=time.gmtime(time.time() + 24*60*60), content=c)
                 self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             if self.options.verbose:
