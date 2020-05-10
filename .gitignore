@@ -1,3 +1,7 @@
 /mythcal.conf
 /mythcal.cache
 /mythcal.credentials
+
+# IntelliJ files
+/.idea
+*.iml
