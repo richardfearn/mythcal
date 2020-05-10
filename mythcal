@@ -209,25 +209,7 @@ class Mythcal:
             self.options.verbose = True
 
         if self.options.auth:
-
-            flow = OAuth2WebServerFlow(
-                client_id=OAUTH_CLIENT_ID,
-                client_secret=OAUTH_CLIENT_SECRET,
-                scope=OAUTH_SCOPE,
-                redirect_uri=OAUTH_REDIRECT_URI
-            )
-
-            auth_uri = flow.step1_get_authorize_url()
-            print(AUTH_MESSAGE_1 % auth_uri)
-
-            auth_code = input("Code: ")
-            print()
-
-            credentials = flow.step2_exchange(auth_code)
-            storage = Storage(CREDENTIALS_FILE)
-            storage.put(credentials)
-            print(AUTH_MESSAGE_2)
-            sys.exit(0)
+            self.auth()
 
         # check for existence of credentials
         if not os.path.isfile(CREDENTIALS_FILE):
@@ -333,6 +315,29 @@ class Mythcal:
 
         if self.options.verbose:
             print("Finished.")
+
+    @staticmethod
+    def auth():
+        """Guides the user through the process of allowing mythcal to access their Google calendar"""
+
+        flow = OAuth2WebServerFlow(
+            client_id=OAUTH_CLIENT_ID,
+            client_secret=OAUTH_CLIENT_SECRET,
+            scope=OAUTH_SCOPE,
+            redirect_uri=OAUTH_REDIRECT_URI
+        )
+
+        auth_uri = flow.step1_get_authorize_url()
+        print(AUTH_MESSAGE_1 % auth_uri)
+
+        auth_code = input("Code: ")
+        print()
+
+        credentials = flow.step2_exchange(auth_code)
+        storage = Storage(CREDENTIALS_FILE)
+        storage.put(credentials)
+        print(AUTH_MESSAGE_2)
+        sys.exit(0)
 
 
 if __name__ == '__main__':
