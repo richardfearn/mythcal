@@ -35,10 +35,6 @@ of upcoming recordings.
 4. Copy the template configuration file, `mythcal.conf.template`, to
    `mythcal.conf`, and add the missing settings. The sections are:
 
-    * `[mythtv]` - details about your MythTV server. `"timezone"` should be a
-      zoneinfo time zone name such as `"Europe/London"`. To find an appropriate
-      time zone name, use the supplied `timezones` script (see below).
-
     * `[calendar]` - details about your Google Calendar. To find the `"id"`, go into
       Google Calendar Settings, click the calendar you want to use under
       "Settings for my calendars" on the left-hand side, and look in the
@@ -59,16 +55,6 @@ of upcoming recordings.
    often as you like. The command being run should look something like this:
 
    `cd /path/to/mythcal/directory && ./mythcal`
-
-## Finding an appropriate time zone name
-
-The `timezones` script can be used to find an appropriate time zone name.
-Running it with no parameters lists all time zone names. If a parameter is
-given, the script does a case-insensitive search for time zones containing
-that text. For example:
-
-    $ ./timezones york
-    America/New_York
 
 ## Acknowledgements
 

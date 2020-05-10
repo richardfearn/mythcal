@@ -179,9 +179,6 @@ class Mythcal:
         config.read(CONFIG_FILE)
 
         self.settings = Values({
-            "mythtv": Values({
-                "timezone": config.get("mythtv", "timezone")
-            }),
             "calendar": Values({
                 "id": config.get("calendar", "id"),
             })
@@ -226,12 +223,6 @@ class Mythcal:
         if not os.path.isfile(CREDENTIALS_FILE):
             print("mythcal: no credentials file. You need to run `mythcal --auth` first", file=sys.stderr)
             sys.exit(1)
-
-        # get pytz timezone object for local time zone
-        if self.settings.mythtv.timezone not in pytz.all_timezones:
-            print("mythcal: timezone name '%s' is not recognised" % self.settings.mythtv.timezone, file=sys.stderr)
-            sys.exit(1)
-        time_zone = pytz.timezone(self.settings.mythtv.timezone)
 
         # get recordings from MythTV backend
         recordings = self.get_recordings_from_backend()
