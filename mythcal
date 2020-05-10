@@ -61,64 +61,6 @@ AUTH_MESSAGE_2 = "Done! You can now run mythcal without the `--auth` flag."
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 
-config = configparser.RawConfigParser()
-config.read(CONFIG_FILE)
-
-settings = Values({
-        "mythtv": Values({
-                "timezone": config.get("mythtv", "timezone")
-        }),
-        "calendar": Values({
-                "id": config.get("calendar", "id"),
-        })
-})
-
-parser = OptionParser()
-parser.add_option("-a", "--auth",    action="store_true", dest="auth",    default=False, help="authenticate (required before using mythcal for the first time)")
-parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes (implies -v)")
-parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
-parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="increase verbosity")
-(options, args) = parser.parse_args()
-
-if options.version:
-    print("mythcal %s" % VERSION)
-    sys.exit(0)
-
-if options.dry_run:
-    options.verbose = True
-
-if options.auth:
-
-    flow = OAuth2WebServerFlow(
-        client_id=OAUTH_CLIENT_ID,
-        client_secret=OAUTH_CLIENT_SECRET,
-        scope=OAUTH_SCOPE,
-        redirect_uri=OAUTH_REDIRECT_URI
-    )
-
-    auth_uri = flow.step1_get_authorize_url()
-    print(AUTH_MESSAGE_1 % auth_uri)
-
-    auth_code = input("Code: ")
-    print()
-
-    credentials = flow.step2_exchange(auth_code)
-    storage = Storage(CREDENTIALS_FILE)
-    storage.put(credentials)
-    print(AUTH_MESSAGE_2)
-    sys.exit(0)
-
-# check for existence of credentials
-if not os.path.isfile(CREDENTIALS_FILE):
-    print("mythcal: no credentials file. You need to run `mythcal --auth` first", file=sys.stderr)
-    sys.exit(1)
-
-# get pytz timezone object for local time zone
-if settings.mythtv.timezone not in pytz.all_timezones:
-    print("mythcal: timezone name '%s' is not recognised" % settings.mythtv.timezone, file=sys.stderr)
-    sys.exit(1)
-time_zone = pytz.timezone(settings.mythtv.timezone)
-
 
 def convert_mythtv_datetime_to_timestamp(t):
     ndt = t.asnaiveutc()
@@ -174,24 +116,6 @@ def get_recordings_from_backend():
     return {"current": current, "future": upcoming}
 
 
-# get recordings from MythTV backend
-recordings = get_recordings_from_backend()
-
-# load recording list from last time
-last_recordings = None
-if os.path.exists(CACHE_FILE):
-    if options.verbose:
-        print("Reading cache file...")
-    f = open(CACHE_FILE, "rb")
-    last_recordings = pickle.load(f)
-    f.close()
-    if options.verbose:
-        print("Done.")
-else:
-    if options.verbose:
-        print("Cache file does not exist.")
-
-
 def delete_existing_events():
     """Deletes all events from the calendar"""
 
@@ -243,6 +167,81 @@ def create_programme_event(title, subtitle, channel, start, end, content=None):
     }
     return event
 
+
+config = configparser.RawConfigParser()
+config.read(CONFIG_FILE)
+
+settings = Values({
+    "mythtv": Values({
+        "timezone": config.get("mythtv", "timezone")
+    }),
+    "calendar": Values({
+        "id": config.get("calendar", "id"),
+    })
+})
+
+parser = OptionParser()
+parser.add_option("-a", "--auth",    action="store_true", dest="auth",    default=False, help="authenticate (required before using mythcal for the first time)")
+parser.add_option("-n", "--dry-run", action="store_true", dest="dry_run", default=False, help="perform a trial run; don't make any changes (implies -v)")
+parser.add_option("-V", "--version", action="store_true", dest="version", default=False, help="show version and exit")
+parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="increase verbosity")
+(options, args) = parser.parse_args()
+
+if options.version:
+    print("mythcal %s" % VERSION)
+    sys.exit(0)
+
+if options.dry_run:
+    options.verbose = True
+
+if options.auth:
+
+    flow = OAuth2WebServerFlow(
+        client_id=OAUTH_CLIENT_ID,
+        client_secret=OAUTH_CLIENT_SECRET,
+        scope=OAUTH_SCOPE,
+        redirect_uri=OAUTH_REDIRECT_URI
+    )
+
+    auth_uri = flow.step1_get_authorize_url()
+    print(AUTH_MESSAGE_1 % auth_uri)
+
+    auth_code = input("Code: ")
+    print()
+
+    credentials = flow.step2_exchange(auth_code)
+    storage = Storage(CREDENTIALS_FILE)
+    storage.put(credentials)
+    print(AUTH_MESSAGE_2)
+    sys.exit(0)
+
+# check for existence of credentials
+if not os.path.isfile(CREDENTIALS_FILE):
+    print("mythcal: no credentials file. You need to run `mythcal --auth` first", file=sys.stderr)
+    sys.exit(1)
+
+# get pytz timezone object for local time zone
+if settings.mythtv.timezone not in pytz.all_timezones:
+    print("mythcal: timezone name '%s' is not recognised" % settings.mythtv.timezone, file=sys.stderr)
+    sys.exit(1)
+time_zone = pytz.timezone(settings.mythtv.timezone)
+
+# get recordings from MythTV backend
+recordings = get_recordings_from_backend()
+
+# load recording list from last time
+last_recordings = None
+if os.path.exists(CACHE_FILE):
+    if options.verbose:
+        print("Reading cache file...")
+    f = open(CACHE_FILE, "rb")
+    last_recordings = pickle.load(f)
+    f.close()
+    if options.verbose:
+        print("Done.")
+else:
+    if options.verbose:
+        print("Cache file does not exist.")
 
 # update calendar, and output new recording list, if different
 if recordings != last_recordings:
