@@ -16,6 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""mythcal - synchronizes your MythTV recording schedule to a Google calendar"""
+
 import configparser
 from optparse import OptionParser
 from datetime import datetime
@@ -63,6 +65,7 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 
 
 class Mythcal:
+    """Main mythcal class"""
 
     def __init__(self):
         self.calendar_id = None
@@ -71,6 +74,7 @@ class Mythcal:
 
     @staticmethod
     def convert_mythtv_datetime_to_timestamp(t):
+        """Converts a MythTV datetime to a UNIX timestamp"""
         ndt = t.asnaiveutc()
         dt = datetime(ndt.year, ndt.month, ndt.day, ndt.hour, ndt.minute, tzinfo=pytz.utc)
         ts = int(dt.timestamp())
@@ -144,6 +148,7 @@ class Mythcal:
 
     @staticmethod
     def create_all_day_event(title, start, end, content=None):
+        """Creates an all-day event"""
         event = {
             "summary": title,
             "start": {
@@ -158,6 +163,7 @@ class Mythcal:
 
     @staticmethod
     def create_programme_event(prog):
+        """Creates an event for one MythTV recording"""
         if prog["subtitle"]:
             event_title = "%s: %s (%s)" % (prog["title"], prog["subtitle"], prog["channel"])
         else:
@@ -175,6 +181,7 @@ class Mythcal:
         return event
 
     def main(self):
+        """Main mythcal entry point"""
 
         config = configparser.RawConfigParser()
         config.read(CONFIG_FILE)
@@ -190,7 +197,7 @@ class Mythcal:
                           help="show version and exit")
         parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
                           help="increase verbosity")
-        (self.options, args) = parser.parse_args()
+        (self.options, _) = parser.parse_args()
 
         if self.options.version:
             print("mythcal %s" % VERSION)
