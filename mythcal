@@ -67,6 +67,8 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 
 Programme = namedtuple("Programme", ["title", "subtitle", "channel", "start", "end", "description"])
 
+Recordings = namedtuple("Recordings", ["current", "future"])
+
 
 class Mythcal:
     """Main mythcal class"""
@@ -130,7 +132,7 @@ class Mythcal:
         current = [Mythcal.convert_program(p) for p in current]
         current.sort(key=attrgetter("start"))
 
-        return {"current": current, "future": upcoming}
+        return Recordings(current=current, future=upcoming)
 
     def delete_existing_events(self):
         """Deletes all events from the calendar"""
@@ -330,7 +332,7 @@ class Mythcal:
     def add_programme_events(self, recordings):
         """Adds an event for current/future recordings"""
 
-        for prog in recordings["current"] + recordings["future"]:
+        for prog in recordings.current + recordings.future:
 
             if self.options.verbose:
                 print("    will add \"%s\"" % prog.title)
@@ -346,17 +348,17 @@ class Mythcal:
 
         description = ""
 
-        if recordings["current"]:
+        if recordings.current:
             description += "Now recording:\n"
-            for prog in recordings["current"]:
+            for prog in recordings.current:
                 description += "    %s (%s)\n" % (prog.title, prog.channel)
         else:
             description += "Not currently recording.\n"
 
         description += "\n"
 
-        if recordings["future"]:
-            prog = recordings["future"][0]
+        if recordings.future:
+            prog = recordings.future[0]
             description += "Next recording:\n    %s (%s, %s)" % (
                 prog.title, prog.channel, datetime.fromtimestamp(prog.start).strftime("%H:%M, %a %d %b"))
         else:
