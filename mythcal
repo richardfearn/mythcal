@@ -248,16 +248,7 @@ class Mythcal:
 
             self.add_events(recordings)
 
-            # update last recording list
-            if self.options.verbose:
-                print("Updating cache...")
-            if not self.options.dry_run:
-                cache_file = open(CACHE_FILE, "wb")
-                pickle.dump(recordings, cache_file)
-                cache_file.close()
-
-            if self.options.verbose:
-                print("Done.")
+            self.update_cache(recordings)
 
         else:
             if self.options.verbose:
@@ -374,6 +365,19 @@ class Mythcal:
             event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
                                               end=time.gmtime(time.time() + 24*60*60), content=description)
             self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
+
+    def update_cache(self, recordings):
+        """Updates the cache file"""
+
+        if self.options.verbose:
+            print("Updating cache...")
+
+        if not self.options.dry_run:
+            with open(CACHE_FILE, "wb") as cache_file:
+                pickle.dump(recordings, cache_file)
+
+        if self.options.verbose:
+            print("Done.")
 
     @staticmethod
     def auth():
