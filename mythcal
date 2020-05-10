@@ -240,16 +240,7 @@ class Mythcal:
         # update calendar, and output new recording list, if different
         if recordings != last_recordings:
 
-            # get calendar service and log in
-            if self.options.verbose:
-                print("Logging into Google Calendar...")
-            storage = Storage(CREDENTIALS_FILE)
-            credentials = storage.get()
-            http = httplib2.Http()
-            http = credentials.authorize(http)
-            self.service = build("calendar", "v3", http=http)
-            if self.options.verbose:
-                print("Done.")
+            self.create_calendar_service()
 
             # Get all calendars
             if self.options.verbose:
@@ -340,6 +331,23 @@ class Mythcal:
             print("Cache file does not exist.")
 
         return None
+
+    def create_calendar_service(self):
+        """Gets the calendar service and logs in"""
+
+        if self.options.verbose:
+            print("Logging into Google Calendar...")
+
+        storage = Storage(CREDENTIALS_FILE)
+        credentials = storage.get()
+
+        http = httplib2.Http()
+        http = credentials.authorize(http)
+
+        self.service = build("calendar", "v3", http=http)
+
+        if self.options.verbose:
+            print("Done.")
 
     @staticmethod
     def auth():
