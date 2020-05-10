@@ -124,6 +124,7 @@ class Mythcal:
                 # don't include live programmes (issue 16)
                 if prog.get("recgroup") != "LiveTV":
                     current.append(prog)
+
         if self.options.verbose:
             print("    found %d current recording(s)" % len(current))
 
@@ -137,24 +138,32 @@ class Mythcal:
 
         if self.options.verbose:
             print("Deleting existing entries...")
+
         result = self.service.events().list(calendarId=self.calendar_id).execute()
         while result:
+
             for item in result["items"]:
+
                 if self.options.verbose:
                     print("    will delete \"%s\"" % item["summary"])
+
                 if not self.options.dry_run:
                     self.service.events().delete(calendarId=self.calendar_id, eventId=item["id"]).execute()
+
             if "nextPageToken" in result:
                 token = result["nextPageToken"]
                 result = self.service.events().list(calendarId=self.calendar_id, pageToken=token).execute()
+
             else:
                 result = None
+
         if self.options.verbose:
             print("Existing entries deleted.")
 
     @staticmethod
     def create_all_day_event(title, start, end, content=None):
         """Creates an all-day event"""
+
         event = {
             "summary": title,
             "start": {
@@ -170,10 +179,12 @@ class Mythcal:
     @staticmethod
     def create_programme_event(prog):
         """Creates an event for one MythTV recording"""
+
         if prog.subtitle:
             event_title = "%s: %s (%s)" % (prog.title, prog.subtitle, prog.channel)
         else:
             event_title = "%s (%s)" % (prog.title, prog.channel)
+
         event = {
             "summary": event_title,
             "start": {
@@ -184,13 +195,13 @@ class Mythcal:
             },
             "description": prog.description
         }
+
         return event
 
     def main(self):
         """Main mythcal entry point"""
 
         self.read_config()
-
         self.parse_args()
 
         if self.options.version:
@@ -214,14 +225,19 @@ class Mythcal:
         """Parse command-line arguments"""
 
         parser = argparse.ArgumentParser()
+
         parser.add_argument("-a", "--auth", action="store_true", dest="auth",
                             help="authenticate (required before using mythcal for the first time)")
+
         parser.add_argument("-n", "--dry-run", action="store_true", dest="dry_run",
                             help="perform a trial run; don't make any changes (implies -v)")
+
         parser.add_argument("-V", "--version", action="store_true", dest="version",
                             help="show version and exit")
+
         parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
                             help="increase verbosity")
+
         self.options = parser.parse_args()
 
         if self.options.dry_run:
@@ -245,13 +261,9 @@ class Mythcal:
         if recordings != last_recordings:
 
             self.create_calendar_service()
-
             self.check_calendar()
-
             self.delete_existing_events()
-
             self.add_events(recordings)
-
             self.update_cache(recordings)
 
         else:
