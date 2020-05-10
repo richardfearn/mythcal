@@ -212,6 +212,38 @@ def delete_existing_events():
         print("Existing entries deleted.")
 
 
+def create_all_day_event(title, start, end, content=None):
+    event = {
+        "summary": title,
+        "start": {
+            "date": time.strftime(DATE_FORMAT, start),
+        },
+        "end": {
+            "date": time.strftime(DATE_FORMAT, end),
+        },
+        "description": content
+    }
+    return event
+
+
+def create_programme_event(title, subtitle, channel, start, end, content=None):
+    if subtitle:
+        event_title = "%s: %s (%s)" % (title, subtitle, channel)
+    else:
+        event_title = "%s (%s)" % (title, channel)
+    event = {
+        "summary": event_title,
+        "start": {
+            "dateTime": datetime.fromtimestamp(start, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+        },
+        "end": {
+            "dateTime": datetime.fromtimestamp(end, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+        },
+        "description": content
+    }
+    return event
+
+
 # update calendar, and output new recording list, if different
 if recordings != last_recordings:
 
@@ -239,36 +271,6 @@ if recordings != last_recordings:
         print("Done.")
 
     delete_existing_events()
-
-    def create_all_day_event(title, start, end, content=None):
-        event = {
-            "summary": title,
-            "start": {
-                "date": time.strftime(DATE_FORMAT, start),
-            },
-            "end": {
-                "date": time.strftime(DATE_FORMAT, end),
-            },
-            "description": content
-        }
-        return event
-
-    def create_programme_event(title, subtitle, channel, start, end, content=None):
-        if subtitle:
-            event_title = "%s: %s (%s)" % (title, subtitle, channel)
-        else:
-            event_title = "%s (%s)" % (title, channel)
-        event = {
-            "summary": event_title,
-            "start": {
-                "dateTime": datetime.fromtimestamp(start, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
-            },
-            "end": {
-                "dateTime": datetime.fromtimestamp(end, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
-            },
-            "description": content
-        }
-        return event
 
     if options.verbose:
         print("Adding new entries...")
