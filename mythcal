@@ -73,12 +73,14 @@ class Mythcal:
         self.service = None
 
     @staticmethod
-    def convert_mythtv_datetime_to_timestamp(t):
+    def convert_mythtv_datetime_to_timestamp(mythtv_datetime):
         """Converts a MythTV datetime to a UNIX timestamp"""
-        ndt = t.asnaiveutc()
-        dt = datetime(ndt.year, ndt.month, ndt.day, ndt.hour, ndt.minute, tzinfo=pytz.utc)
-        ts = int(dt.timestamp())
-        return ts
+        naive_datetime = mythtv_datetime.asnaiveutc()
+        python_datetime = datetime(naive_datetime.year, naive_datetime.month, naive_datetime.day,
+                                   naive_datetime.hour, naive_datetime.minute,
+                                   tzinfo=pytz.utc)
+        timestamp = int(python_datetime.timestamp())
+        return timestamp
 
     @staticmethod
     def convert_program(prog):
@@ -240,9 +242,9 @@ class Mythcal:
         if os.path.exists(CACHE_FILE):
             if self.options.verbose:
                 print("Reading cache file...")
-            f = open(CACHE_FILE, "rb")
-            last_recordings = pickle.load(f)
-            f.close()
+            cache_file = open(CACHE_FILE, "rb")
+            last_recordings = pickle.load(cache_file)
+            cache_file.close()
             if self.options.verbose:
                 print("Done.")
         else:
@@ -268,9 +270,9 @@ class Mythcal:
                 print("Getting calendar...")
             try:
                 self.service.calendars().get(calendarId=self.calendar_id).execute()
-            except HttpError as e:
+            except HttpError as ex:
                 print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
-                print(e.content, file=sys.stderr)
+                print(ex.content, file=sys.stderr)
                 sys.exit(1)
             if self.options.verbose:
                 print("Done.")
@@ -290,25 +292,25 @@ class Mythcal:
 
             # add 'last updated' event
             last_update_text = "MythTV updated %s" % time.strftime("%H:%M", time.localtime())
-            c = ""
+            description = ""
             if recordings["current"]:
-                c += "Now recording:\n"
-                for p in recordings["current"]:
-                    c += "    %s (%s)\n" % (p["title"], p["channel"])
+                description += "Now recording:\n"
+                for prog in recordings["current"]:
+                    description += "    %s (%s)\n" % (prog["title"], prog["channel"])
             else:
-                c += "Not currently recording.\n"
-            c += "\n"
+                description += "Not currently recording.\n"
+            description += "\n"
             if recordings["future"]:
-                p = recordings["future"][0]
-                c += "Next recording:\n    %s (%s, %s)" % (
-                    p["title"], p["channel"], datetime.fromtimestamp(p["start"]).strftime("%H:%M, %a %d %b"))
+                prog = recordings["future"][0]
+                description += "Next recording:\n    %s (%s, %s)" % (
+                    prog["title"], prog["channel"], datetime.fromtimestamp(prog["start"]).strftime("%H:%M, %a %d %b"))
             else:
-                c += "No future recordings scheduled.\n"
+                description += "No future recordings scheduled.\n"
             if self.options.verbose:
                 print("    will add \"%s\"" % last_update_text)
             if not self.options.dry_run:
                 event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
-                                                  end=time.gmtime(time.time() + 24*60*60), content=c)
+                                                  end=time.gmtime(time.time() + 24*60*60), content=description)
                 self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             if self.options.verbose:
@@ -318,9 +320,9 @@ class Mythcal:
             if self.options.verbose:
                 print("Updating cache...")
             if not self.options.dry_run:
-                f = open(CACHE_FILE, "wb")
-                pickle.dump(recordings, f)
-                f.close()
+                cache_file = open(CACHE_FILE, "wb")
+                pickle.dump(recordings, cache_file)
+                cache_file.close()
 
             if self.options.verbose:
                 print("Done.")
