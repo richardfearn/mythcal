@@ -185,10 +185,29 @@ class Mythcal:
     def main(self):
         """Main mythcal entry point"""
 
+        self.read_config()
+
+        self.parse_args()
+
+        if self.options.version:
+            print("mythcal %s" % VERSION)
+
+        elif self.options.auth:
+            self.auth()
+
+        else:
+            self.sync()
+
+    def read_config(self):
+        """Reads the user's mythcal configuration from their config file"""
+
         config = configparser.RawConfigParser()
         config.read(CONFIG_FILE)
 
         self.calendar_id = config.get("calendar", "id")
+
+    def parse_args(self):
+        """Parse command-line arguments"""
 
         parser = argparse.ArgumentParser()
         parser.add_argument("-a", "--auth", action="store_true", dest="auth",
@@ -201,15 +220,11 @@ class Mythcal:
                             help="increase verbosity")
         self.options = parser.parse_args()
 
-        if self.options.version:
-            print("mythcal %s" % VERSION)
-            sys.exit(0)
-
         if self.options.dry_run:
             self.options.verbose = True
 
-        if self.options.auth:
-            self.auth()
+    def sync(self):
+        """Synchronizes MythTV recordings with the Google calendar"""
 
         # check for existence of credentials
         if not os.path.isfile(CREDENTIALS_FILE):
@@ -337,7 +352,6 @@ class Mythcal:
         storage = Storage(CREDENTIALS_FILE)
         storage.put(credentials)
         print(AUTH_MESSAGE_2)
-        sys.exit(0)
 
 
 if __name__ == '__main__':
