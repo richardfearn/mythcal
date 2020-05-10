@@ -62,7 +62,6 @@ from oauth2client.file import Storage
 
 import httplib2
 from googleapiclient.discovery import build
-from oauth2client.file import Storage
 from googleapiclient.errors import HttpError
 
 config = configparser.RawConfigParser()
@@ -122,37 +121,6 @@ if settings.mythtv.timezone not in pytz.all_timezones:
     print("mythcal: timezone name '%s' is not recognised" % settings.mythtv.timezone, file=sys.stderr)
     sys.exit(1)
 time_zone = pytz.timezone(settings.mythtv.timezone)
-
-DATE_TIME_DEBUG = False
-
-def mythtv_time_to_naive_utc_time(mythtv_time):
-
-    """Convert MythTV time to naive UTC time"""
-
-    if DATE_TIME_DEBUG:
-        print("converting time...")
-
-    # The timestamp we get from a MythTV datetime object is affected by its timezone...
-    aware_local_mythtv_time = mythtv_time
-    if DATE_TIME_DEBUG:
-        print("  %s\t%s\t%d" % (aware_local_mythtv_time, aware_local_mythtv_time.timetuple(), aware_local_mythtv_time.timestamp()))
-
-    # ...so we convert to UTC to ensure we get a POSIX timestamp from it
-    aware_utc_mythtv_time = aware_local_mythtv_time.astimezone(pytz.utc)
-    if DATE_TIME_DEBUG:
-        print("  %s\t%s\t%d" % (aware_utc_mythtv_time, aware_utc_mythtv_time.timetuple(), aware_utc_mythtv_time.timestamp()))
-
-    # Create a standard datetime that represents the same point in time...
-    aware_utc_datetime = datetime.fromtimestamp(aware_utc_mythtv_time.timestamp(), pytz.utc)
-    if DATE_TIME_DEBUG:
-        print("  %s\t%s" % (aware_utc_datetime, aware_utc_datetime.timetuple()))
-
-    # ...and drop the timezone
-    naive_utc_datetime = aware_utc_datetime.replace(tzinfo=None)
-    if DATE_TIME_DEBUG:
-        print("  %s\t\t%s" % (naive_utc_datetime, naive_utc_datetime.timetuple()))
-
-    return naive_utc_datetime
 
 def convert_mythtv_datetime_to_timestamp(t):
     ndt = t.asnaiveutc()
@@ -221,11 +189,6 @@ if os.path.exists(CACHE_FILE):
 else:
     if options.verbose:
         print("Cache file does not exist.")
-
-def submit_batch_request(request, url):
-    response_feed = calendar_service.ExecuteBatch(request, url)
-    # for entry in response_feed.entry:
-    #     print("%s; status %s; reason %s" % (entry.batch_id.text, entry.batch_status.code, entry.batch_status.reason))
 
 def delete_existing_events():
     """Deletes all events from the calendar"""
