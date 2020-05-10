@@ -24,8 +24,9 @@ from datetime import datetime
 import pickle
 import os
 import sys
-from operator import itemgetter
+from operator import attrgetter
 import time
+from collections import namedtuple
 
 from MythTV import MythBE
 import pytz
@@ -64,6 +65,9 @@ DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000%z"
 
 
+Programme = namedtuple("Programme", ["title", "subtitle", "channel", "start", "end", "description"])
+
+
 class Mythcal:
     """Main mythcal class"""
 
@@ -84,15 +88,15 @@ class Mythcal:
 
     @staticmethod
     def convert_program(prog):
-        """Converts a MythTV Program object to a dictionary"""
-        return {
-            "title": prog.title,
-            "subtitle": prog.subtitle,
-            "channel": prog.channame,
-            "start": Mythcal.convert_mythtv_datetime_to_timestamp(prog.starttime),
-            "end": Mythcal.convert_mythtv_datetime_to_timestamp(prog.endtime),
-            "description": prog.description
-        }
+        """Converts a MythTV Program object to an instance of Programme"""
+        return Programme(
+            title=prog.title,
+            subtitle=prog.subtitle,
+            channel=prog.channame,
+            start=Mythcal.convert_mythtv_datetime_to_timestamp(prog.starttime),
+            end=Mythcal.convert_mythtv_datetime_to_timestamp(prog.endtime),
+            description=prog.description,
+        )
 
     def get_recordings_from_backend(self):
         """Gets current and upcoming recordings from MythTV"""
@@ -109,7 +113,7 @@ class Mythcal:
             print("    found %d upcoming recording(s)" % len(upcoming))
 
         upcoming = [Mythcal.convert_program(p) for p in upcoming]
-        upcoming.sort(key=itemgetter("start"))
+        upcoming.sort(key=attrgetter("start"))
 
         current = []
         for recorder in mythtv.getRecorderList():
@@ -124,7 +128,7 @@ class Mythcal:
             print("    found %d current recording(s)" % len(current))
 
         current = [Mythcal.convert_program(p) for p in current]
-        current.sort(key=itemgetter("start"))
+        current.sort(key=attrgetter("start"))
 
         return {"current": current, "future": upcoming}
 
@@ -166,19 +170,19 @@ class Mythcal:
     @staticmethod
     def create_programme_event(prog):
         """Creates an event for one MythTV recording"""
-        if prog["subtitle"]:
-            event_title = "%s: %s (%s)" % (prog["title"], prog["subtitle"], prog["channel"])
+        if prog.subtitle:
+            event_title = "%s: %s (%s)" % (prog.title, prog.subtitle, prog.channel)
         else:
-            event_title = "%s (%s)" % (prog["title"], prog["channel"])
+            event_title = "%s (%s)" % (prog.title, prog.channel)
         event = {
             "summary": event_title,
             "start": {
-                "dateTime": datetime.fromtimestamp(prog["start"], tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+                "dateTime": datetime.fromtimestamp(prog.start, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
             },
             "end": {
-                "dateTime": datetime.fromtimestamp(prog["end"], tz=pytz.utc).strftime(DATE_TIME_FORMAT),
+                "dateTime": datetime.fromtimestamp(prog.end, tz=pytz.utc).strftime(DATE_TIME_FORMAT),
             },
-            "description": prog["description"]
+            "description": prog.description
         }
         return event
 
@@ -329,7 +333,7 @@ class Mythcal:
         for prog in recordings["current"] + recordings["future"]:
 
             if self.options.verbose:
-                print("    will add \"%s\"" % prog["title"])
+                print("    will add \"%s\"" % prog.title)
 
             if not self.options.dry_run:
                 event = self.create_programme_event(prog)
@@ -345,7 +349,7 @@ class Mythcal:
         if recordings["current"]:
             description += "Now recording:\n"
             for prog in recordings["current"]:
-                description += "    %s (%s)\n" % (prog["title"], prog["channel"])
+                description += "    %s (%s)\n" % (prog.title, prog.channel)
         else:
             description += "Not currently recording.\n"
 
@@ -354,7 +358,7 @@ class Mythcal:
         if recordings["future"]:
             prog = recordings["future"][0]
             description += "Next recording:\n    %s (%s, %s)" % (
-                prog["title"], prog["channel"], datetime.fromtimestamp(prog["start"]).strftime("%H:%M, %a %d %b"))
+                prog.title, prog.channel, datetime.fromtimestamp(prog.start).strftime("%H:%M, %a %d %b"))
         else:
             description += "No future recordings scheduled.\n"
 
