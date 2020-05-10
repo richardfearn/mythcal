@@ -336,5 +336,4 @@ class Mythcal:
 
 
 if __name__ == '__main__':
-    mythcal = Mythcal()
-    mythcal.main()
+    Mythcal().main()
