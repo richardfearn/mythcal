@@ -61,9 +61,9 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
 
 import httplib2
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from oauth2client.file import Storage
-from apiclient.errors import HttpError
+from googleapiclient.errors import HttpError
 
 config = configparser.RawConfigParser()
 config.read(CONFIG_FILE)
