@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1] - 2015-03-14
+
+### Fixed
+
+- Don't add live programmes to the calendar. ([Issue 16](https://github.com/richardfearn/mythcal/issues/16))
+
+
 ## [0.27.0] - 2014-12-23
 
 ### Changed
@@ -15,3 +22,4 @@
 - Simplify time zone handling.
 
 [0.27.0]: https://github.com/richardfearn/mythcal/tree/0.27.0
+[0.27.1]: https://github.com/richardfearn/mythcal/compare/0.27.0...0.27.1
