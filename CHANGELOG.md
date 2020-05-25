@@ -1,5 +1,26 @@
 # Changelog
 
+## [31.0] - 2020-05-25
+
+### Added
+
+- Include current/future recordings in "MythTV updated" event description
+- Include date of next recording in "MythTV updated" event description
+
+### Changed
+
+- Convert to Python 3
+- Update version numbering scheme to match MythTV (remove `0.` prefix)
+- Time zone setting (`timezone` in `[mythtv]` section) is no longer required (it hasn't been used since 2014)
+- Update `README`, and convert it to Markdown
+- Convert this changelog to the [Keep a Changelog] format
+- Refactor and reformat `mythcal`; fix issues reported by pylint and flake8
+
+### Removed
+
+- Remove unused code
+- Remove `timezones` script
+
 ## [0.27.1] - 2015-03-14
 
 ### Fixed
@@ -23,3 +44,6 @@
 
 [0.27.0]: https://github.com/richardfearn/mythcal/tree/0.27.0
 [0.27.1]: https://github.com/richardfearn/mythcal/compare/0.27.0...0.27.1
+[31.0]: https://github.com/richardfearn/mythcal/compare/0.27.1...31.0
+
+[Keep a Changelog]: https://keepachangelog.com/en/1.0.0/

@@ -40,7 +40,7 @@ CONFIG_FILE = "mythcal.conf"
 CACHE_FILE = "mythcal.cache"
 CREDENTIALS_FILE = "mythcal.credentials"
 
-VERSION = "0.27.0"
+VERSION = "31.0"
 
 # From https://developers.google.com/accounts/docs/OAuth2:
 #     "...a client secret, which you embed in the source code of your
