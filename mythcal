@@ -27,6 +27,7 @@ import sys
 from operator import attrgetter
 import time
 from collections import namedtuple
+import logging
 
 from MythTV import MythBE
 import pytz
@@ -70,10 +71,15 @@ Programme = namedtuple("Programme", ["title", "subtitle", "channel", "start", "e
 Recordings = namedtuple("Recordings", ["current", "future"])
 
 
+LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(format=LOGGING_FORMAT)
+
+
 class Mythcal:
     """Main mythcal class"""
 
     def __init__(self):
+        self.logger = logging.getLogger("Mythcal")
         self.calendar_id = None
         self.options = None
         self.service = None
@@ -103,16 +109,14 @@ class Mythcal:
     def get_recordings_from_backend(self):
         """Gets current and upcoming recordings from MythTV"""
 
-        if self.options.verbose:
-            print("Getting recordings from MythTV backend...")
+        self.logger.debug("Getting recordings from MythTV backend...")
 
         mythtv = MythBE()
 
         upcoming = mythtv.getUpcomingRecordings()  # pylint: disable=no-value-for-parameter
         upcoming = list(upcoming)  # convert listiterator to list
 
-        if self.options.verbose:
-            print("    found %d upcoming recording(s)" % len(upcoming))
+        self.logger.debug("    found %d upcoming recording(s)", len(upcoming))
 
         upcoming = [Mythcal.convert_program(p) for p in upcoming]
         upcoming.sort(key=attrgetter("start"))
@@ -125,8 +129,7 @@ class Mythcal:
                 if prog.get("recgroup") != "LiveTV":
                     current.append(prog)
 
-        if self.options.verbose:
-            print("    found %d current recording(s)" % len(current))
+        self.logger.debug("    found %d current recording(s)", len(current))
 
         current = [Mythcal.convert_program(p) for p in current]
         current.sort(key=attrgetter("start"))
@@ -136,16 +139,14 @@ class Mythcal:
     def delete_existing_events(self):
         """Deletes all events from the calendar"""
 
-        if self.options.verbose:
-            print("Deleting existing entries...")
+        self.logger.debug("Deleting existing entries...")
 
         result = self.service.events().list(calendarId=self.calendar_id).execute()
         while result:
 
             for item in result["items"]:
 
-                if self.options.verbose:
-                    print("    will delete \"%s\"" % item["summary"])
+                self.logger.debug("    will delete \"%s\"", item["summary"])
 
                 if not self.options.dry_run:
                     self.service.events().delete(calendarId=self.calendar_id, eventId=item["id"]).execute()
@@ -157,8 +158,7 @@ class Mythcal:
             else:
                 result = None
 
-        if self.options.verbose:
-            print("Existing entries deleted.")
+        self.logger.debug("Existing entries deleted.")
 
     @staticmethod
     def create_all_day_event(title, start, end, content=None):
@@ -243,6 +243,9 @@ class Mythcal:
         if self.options.dry_run:
             self.options.verbose = True
 
+        if self.options.verbose:
+            self.logger.setLevel(logging.DEBUG)
+
     def sync(self):
         """Synchronizes MythTV recordings with the Google calendar"""
 
@@ -267,38 +270,32 @@ class Mythcal:
             self.update_cache(recordings)
 
         else:
-            if self.options.verbose:
-                print("Recordings have not changed; not updating calendar.")
+            self.logger.debug("Recordings have not changed; not updating calendar.")
 
-        if self.options.verbose:
-            print("Finished.")
+        self.logger.debug("Finished.")
 
     def read_cache(self):
         """Reads the cache file"""
 
         if os.path.exists(CACHE_FILE):
 
-            if self.options.verbose:
-                print("Reading cache file...")
+            self.logger.debug("Reading cache file...")
 
             with open(CACHE_FILE, "rb") as cache_file:
                 last_recordings = pickle.load(cache_file)
 
-            if self.options.verbose:
-                print("Done.")
+            self.logger.debug("Done.")
 
             return last_recordings
 
-        if self.options.verbose:
-            print("Cache file does not exist.")
+        self.logger.debug("Cache file does not exist.")
 
         return None
 
     def create_calendar_service(self):
         """Gets the calendar service and logs in"""
 
-        if self.options.verbose:
-            print("Logging into Google Calendar...")
+        self.logger.debug("Logging into Google Calendar...")
 
         storage = Storage(CREDENTIALS_FILE)
         credentials = storage.get()
@@ -306,46 +303,43 @@ class Mythcal:
         http = httplib2.Http()
         http = credentials.authorize(http)
 
-        self.service = build("calendar", "v3", http=http)
+        # cache_discovery=False prevents a warning being logged by the Google API Client:
+        #   "file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth"
+        self.service = build("calendar", "v3", http=http, cache_discovery=False)
 
-        if self.options.verbose:
-            print("Done.")
+        self.logger.debug("Done.")
 
     def check_calendar(self):
         """Attempts to get the user-specified calendar"""
 
-        if self.options.verbose:
-            print("Getting calendar...")
+        self.logger.debug("Getting calendar...")
 
         try:
             self.service.calendars().get(calendarId=self.calendar_id).execute()
         except HttpError as ex:
-            print("mythcal: could not get calendar with id '%s':" % self.calendar_id, file=sys.stderr)
-            print(ex.content, file=sys.stderr)
+            self.logger.error("Could not get calendar with ID '%s'", self.calendar_id, exc_info=True)
+            self.logger.error("API response: %s", ex.content)
+            print("mythcal: could not get calendar with ID '%s'" % self.calendar_id, file=sys.stderr)
             sys.exit(1)
 
-        if self.options.verbose:
-            print("Done.")
+        self.logger.debug("Done.")
 
     def add_events(self, recordings):
         """Adds new events to the calendar"""
 
-        if self.options.verbose:
-            print("Adding new entries...")
+        self.logger.debug("Adding new entries...")
 
         self.add_programme_events(recordings)
         self.add_last_updated_event(recordings)
 
-        if self.options.verbose:
-            print("New entries added.")
+        self.logger.debug("New entries added.")
 
     def add_programme_events(self, recordings):
         """Adds an event for current/future recordings"""
 
         for prog in recordings.current + recordings.future:
 
-            if self.options.verbose:
-                print("    will add \"%s\"" % prog.title)
+            self.logger.debug("    will add \"%s\"", prog.title)
 
             if not self.options.dry_run:
                 event = self.create_programme_event(prog)
@@ -374,8 +368,7 @@ class Mythcal:
         else:
             description += "No future recordings scheduled.\n"
 
-        if self.options.verbose:
-            print("    will add \"%s\"" % last_update_text)
+        self.logger.debug("    will add \"%s\"", last_update_text)
 
         if not self.options.dry_run:
             event = self.create_all_day_event(title=last_update_text, start=time.gmtime(),
@@ -385,15 +378,13 @@ class Mythcal:
     def update_cache(self, recordings):
         """Updates the cache file"""
 
-        if self.options.verbose:
-            print("Updating cache...")
+        self.logger.debug("Updating cache...")
 
         if not self.options.dry_run:
             with open(CACHE_FILE, "wb") as cache_file:
                 pickle.dump(recordings, cache_file)
 
-        if self.options.verbose:
-            print("Done.")
+        self.logger.debug("Done.")
 
     @staticmethod
     def auth():
