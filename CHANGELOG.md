@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Replace `print` statements with proper logging
+
 ## [31.0] - 2020-05-25
 
 ### Added
@@ -42,8 +48,9 @@
 
 - Simplify time zone handling.
 
-[0.27.0]: https://github.com/richardfearn/mythcal/tree/0.27.0
-[0.27.1]: https://github.com/richardfearn/mythcal/compare/0.27.0...0.27.1
+[Unreleased]: https://github.com/richardfearn/mythcal/compare/31.0...HEAD
 [31.0]: https://github.com/richardfearn/mythcal/compare/0.27.1...31.0
+[0.27.1]: https://github.com/richardfearn/mythcal/compare/0.27.0...0.27.1
+[0.27.0]: https://github.com/richardfearn/mythcal/tree/0.27.0
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/

@@ -1,6 +1,6 @@
 # mythcal
 
-Copyright 2009-2020 Richard Fearn
+Copyright 2009-2021 Richard Fearn
 
 ## Introduction
 
