@@ -5,6 +5,7 @@
 ### Changed
 
 - Replace `print` statements with proper logging
+- Migrate away from OAuth out-of-band flow
 
 ## [31.0] - 2020-05-25
 
