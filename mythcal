@@ -410,4 +410,7 @@ class Mythcal:
 
 
 if __name__ == '__main__':
-    Mythcal().main()
+    try:
+        Mythcal().main()
+    except KeyboardInterrupt:
+        pass
