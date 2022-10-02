@@ -1,2 +1,8 @@
 [TYPECHECK]
 generated-members=self.service.(events|calendar)
+
+[FORMAT]
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=consider-using-f-string
