@@ -44,6 +44,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 CONFIG_FILE = "mythcal.conf"
+
+CONFIG_CALENDAR_SECTION = "calendar"
+CALENDAR_ID_OPTION = "id"
+
 CACHE_FILE = "mythcal.cache"
 CREDENTIALS_FILE = "mythcal.credentials"
 
@@ -55,7 +59,8 @@ VERSION = "31.0"
 #     as a secret.)"
 OAUTH_CLIENT_ID = '17959633059-62g87ggkkr0a1lub43egv3rgfp7afphq.apps.googleusercontent.com'
 OAUTH_CLIENT_SECRET = 'wlkk_7uk8La2Ceqp9OY49qSH'
-OAUTH_SCOPE = 'https://www.googleapis.com/auth/calendar'
+
+OAUTH_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created'
 
 AUTH_COMPLETE_BROWSER_MESSAGE = \
     "Authorization completed successfully. " \
@@ -81,6 +86,7 @@ class Mythcal:
 
     def __init__(self):
         self.logger = logging.getLogger("Mythcal")
+        self.config = None
         self.calendar_id = None
         self.options = None
         self.service = None
@@ -217,10 +223,14 @@ class Mythcal:
     def read_config(self):
         """Reads the user's mythcal configuration from their config file"""
 
-        config = configparser.RawConfigParser()
-        config.read(CONFIG_FILE)
+        self.config = configparser.RawConfigParser()
+        self.config.read(CONFIG_FILE, encoding="utf-8")
 
-        self.calendar_id = config.get("calendar", "id")
+    def write_config(self):
+        """Writes the user's mythcal configuration to their config file"""
+
+        with open(CONFIG_FILE, "w", encoding="utf-8") as config_file:
+            self.config.write(config_file)
 
     def parse_args(self):
         """Parse command-line arguments"""
@@ -255,6 +265,9 @@ class Mythcal:
             print("mythcal: no credentials file. You need to run `mythcal --auth` first", file=sys.stderr)
             sys.exit(1)
 
+        self.create_calendar_service()
+        self.check_calendar()
+
         # get recordings from MythTV backend
         recordings = self.get_recordings_from_backend()
 
@@ -264,8 +277,6 @@ class Mythcal:
         # update calendar, and output new recording list, if different
         if recordings != last_recordings:
 
-            self.create_calendar_service()
-            self.check_calendar()
             self.delete_existing_events()
             self.add_events(recordings)
             self.update_cache(recordings)
@@ -311,7 +322,26 @@ class Mythcal:
         self.logger.debug("Done.")
 
     def check_calendar(self):
-        """Attempts to get the user-specified calendar"""
+        """Attempts to get the mythcal calendar. Creates a new calendar if required"""
+
+        if not self.config.has_section(CONFIG_CALENDAR_SECTION):
+            self.config.add_section(CONFIG_CALENDAR_SECTION)
+            self.write_config()
+
+        if not self.config.has_option(CONFIG_CALENDAR_SECTION, CALENDAR_ID_OPTION):
+            self.logger.debug("No calendar defined; creating a new one...")
+
+            calendar = {
+                "summary": "MythTV",
+                "description": "Upcoming MythTV recordings",
+            }
+
+            new_calendar = self.service.calendars().insert(body=calendar).execute()
+
+            self.config.set(CONFIG_CALENDAR_SECTION, CALENDAR_ID_OPTION, new_calendar["id"])
+            self.write_config()
+
+        self.calendar_id = self.config.get(CONFIG_CALENDAR_SECTION, CALENDAR_ID_OPTION)
 
         self.logger.debug("Getting calendar...")
 

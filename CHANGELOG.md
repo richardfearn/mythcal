@@ -6,6 +6,8 @@
 
 - Replace `print` statements with proper logging
 - Migrate away from OAuth out-of-band flow
+- mythcal no longer requires full Google Calendar access
+- mythcal now creates the calendar in which MythTV programmes are stored
 
 ## [31.0] - 2020-05-25
 

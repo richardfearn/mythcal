@@ -1,6 +1,6 @@
 # mythcal
 
-Copyright 2009-2021 Richard Fearn
+Copyright 2009-2022 Richard Fearn
 
 ## Introduction
 
@@ -11,18 +11,36 @@ Leaving my MythTV server on 24/7 wastes electricity, but I don't want to forget
 to turn it on to record programmes. I wrote this to make it easy to keep track
 of upcoming recordings.
 
+## Upgrading from previous versions
+
+Earlier versions of mythcal required you to create a calendar manually, and put
+the calendar's ID into a `mythcal.conf` configuration file. This is no longer
+necessary. mythcal now requires fewer permissions (it no longer requires full
+access to all of your calendars), and it creates its own calendar for MythTV
+programmes.
+
+If you are upgrading from an earlier version of mythcal, the quickest way to
+migrate is to do the following:
+
+1. Visit [Google Account Security](https://myaccount.google.com/security) and
+   remove access for mythcal.
+
+2. Delete `mythcal.conf`. This will contain the ID of a calendar that mythcal
+   previously used, but will no longer be able to access (since you created it
+   manually).
+
+3. (Optional) Delete the old MythTV calendar from your Google account; mythcal
+   will no longer update this.
+
+4. Follow the "Getting started" instructions below, starting at step 3 (Google
+   account access).
+
 ## Getting started
 
-1. Create a calendar in Google Calendar that will hold your MythTV programmes.
-   DO NOT USE YOUR MAIN GOOGLE CALENDAR! YOU MUST CREATE A NEW CALENDAR!
-   mythcal synchronises your programmes by deleting everything from the
-   calendar, then adding an event for each programme.
+1. Create a new directory somewhere on your MythTV server and copy the script
+   (`mythcal`) into the directory.
 
-2. Create a new directory somewhere on your MythTV server and copy the script
-   (`mythcal`) and the template configuration file (`mythcal.conf.template`) into
-   the directory.
-
-3. Install the required packages:
+2. Install the required packages:
 
     * MythTV Python bindings (`"libmyth-python"` for Ubuntu; `"python3-MythTV"`
       from RPM Fusion free for Fedora).
@@ -32,26 +50,14 @@ of upcoming recordings.
     * Google APIs Client Library for Python (`"python3-googleapi"` for Ubuntu;
       `"python3-google-api-client"` for Fedora).
 
-4. Copy the template configuration file, `mythcal.conf.template`, to
-   `mythcal.conf`, and add the missing settings. The sections are:
+3. Give mythcal permission to access your Google account. Run `mythcal --auth`
+   and follow the instructions.
 
-    * `[calendar]` - details about your Google Calendar. To find the `"id"`, go into
-      Google Calendar Settings, click the calendar you want to use under
-      "Settings for my calendars" on the left-hand side, and look in the
-      "Integrate calendar" section. The Calendar ID
-      should be displayed: it will look something like
-      `"abc123def@group.calendar.google.com"`. Please remember: USE A SEPARATE
-      CALENDAR FOR MYTHCAL, or your appointments will be deleted!
+4. Run mythcal manually with the `--dry-run` or `-n` option. (The first time you
+   run this, a new calendar will be created for MythTV programmes.) This will
+   tell you what's going to be changed in your calendar.
 
-5. Give mythcal permission to access your calendar. Run `mythcal --auth` and
-   follow the instructions.
-
-6. Run mythcal manually with the `--dry-run` or `-n` option. This will tell you
-   what's going to be changed in your Google Calendar. Hopefully it won't tell
-   you that your important appointments are going to be deleted, because you'll
-   be using a **separate** calendar for mythcal!
-
-7. If everything looks good, set up a cron job which will execute mythcal as
+5. If everything looks good, set up a cron job which will execute mythcal as
    often as you like. The command being run should look something like this:
 
    `cd /path/to/mythcal/directory && ./mythcal`
