@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [33.0] - 2024-02-13
 
 ### Changed
 
@@ -57,7 +57,8 @@
 
 - Simplify time zone handling.
 
-[Unreleased]: https://github.com/richardfearn/mythcal/compare/32.0...HEAD
+[Unreleased]: https://github.com/richardfearn/mythcal/compare/33.0...HEAD
+[33.0]: https://github.com/richardfearn/mythcal/compare/32.0...33.0
 [32.0]: https://github.com/richardfearn/mythcal/compare/31.0...32.0
 [31.0]: https://github.com/richardfearn/mythcal/compare/0.27.1...31.0
 [0.27.1]: https://github.com/richardfearn/mythcal/compare/0.27.0...0.27.1
