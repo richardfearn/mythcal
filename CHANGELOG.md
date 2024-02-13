@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Specify `eventTypes` API parameter when listing calendar events
+
 ## [32.0] - 2022-10-02
 
 ### Changed

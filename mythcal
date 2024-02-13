@@ -148,7 +148,8 @@ class Mythcal:
 
         self.logger.debug("Deleting existing entries...")
 
-        result = self.service.events().list(calendarId=self.calendar_id).execute()
+        result = self.service.events().list(
+            calendarId=self.calendar_id, eventTypes="default").execute()
         while result:
 
             for item in result["items"]:
@@ -160,7 +161,8 @@ class Mythcal:
 
             if "nextPageToken" in result:
                 token = result["nextPageToken"]
-                result = self.service.events().list(calendarId=self.calendar_id, pageToken=token).execute()
+                result = self.service.events().list(
+                    calendarId=self.calendar_id, eventTypes="default", pageToken=token).execute()
 
             else:
                 result = None
